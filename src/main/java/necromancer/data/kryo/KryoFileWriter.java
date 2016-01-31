@@ -8,7 +8,6 @@ import com.esotericsoftware.kryo.io.Output;
 import edu.tufts.eaftan.hprofparser.parser.datastructures.Type;
 import java.io.Closeable;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -17,11 +16,16 @@ import necromancer.data.ObjectId;
 import necromancer.data.ShadowClass;
 import necromancer.data.ShadowObject;
 import necromancer.data.ShadowObjectArray;
+import org.iq80.leveldb.DB;
+import org.iq80.leveldb.Options;
+
+import static org.iq80.leveldb.impl.Iq80DBFactory.*;
+import static org.iq80.leveldb.impl.Iq80DBFactory.factory;
 
 public class KryoFileWriter implements Closeable {
 
     private Output cindex;
-    private Output oindex;
+    private DB oindex;
 
     private Output bref;
     private Output cgroup;
@@ -30,17 +34,17 @@ public class KryoFileWriter implements Closeable {
 
     private Kryo kryo;
 
-    public KryoFileWriter(File file) throws FileNotFoundException {
+    public KryoFileWriter(File file) throws IOException {
         file.mkdirs();
         cindex = new Output(new FileOutputStream(new File(file, "cindex.db")));
         cgroup = new Output(new FileOutputStream(new File(file, "cgroup.db")));
         bref = new Output(new FileOutputStream(new File(file, "bref.db")));
-        oindex = new Output(new FileOutputStream(new File(file, "oindex.db")));
         objectStore = new Output(new FileOutputStream(new File(file, "objects.db")));
 
-    /*   Options options = new Options();
+        Options options = new Options();
         options.createIfMissing(true);
-        DB db = factory.open(new File("example"), options);*/
+                
+        oindex = factory.open(new File(file, "oindex.db"), options);
 
         kryo = NecromancerKryo.getInstance();
     }
@@ -81,9 +85,8 @@ public class KryoFileWriter implements Closeable {
     }
 
     private void addKryoObject(ObjectId id, Object obj) {
-        kryo.writeObject(oindex, new TwoLong(id.getObjectId(), objectStore.total()));
+        oindex.put(bytes(Long.toHexString(id.getObjectId())), bytes(Long.toHexString(objectStore.total())));
         kryo.writeClassAndObject(objectStore, obj);
-
     }
 
     public void addClass(ShadowClass type) {

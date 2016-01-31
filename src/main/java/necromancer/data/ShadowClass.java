@@ -31,15 +31,18 @@ public class ShadowClass {
     @Getter
     private int instanceSize;
 
+    @Getter
+    private int instanceCount;
+
     // name -> type
     private Map<String, Type> fields = new HashMap<>();
 
     public ShadowClass getSuperType() {
         return ShadowFactory.getInstance().getClass(superClassId);
     }
-    
+
     public Iterator<Map.Entry<String, Type>> allFields() {
-        if (getSuperType() != null ) {
+        if (getSuperType() != null) {
             return Iterators.concat(declaredFields(), getSuperType().allFields());
         } else {
             return declaredFields();

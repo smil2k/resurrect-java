@@ -24,6 +24,7 @@ import necromancer.data.ShadowClass;
 import necromancer.data.ShadowFactory;
 import necromancer.data.ShadowObject;
 import necromancer.data.ShadowObjectArray;
+import org.apache.commons.io.FileUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -34,7 +35,7 @@ public class FileOperationsTest {
         Map<String, Type> fields = new HashMap<>();
         fields.put("some", Type.BYTE);
 
-        runKryo(new ShadowClass(new ClassId(8), null, null, "clazz", 2, fields));
+        runKryo(new ShadowClass(new ClassId(8), null, null, "clazz", 2, 12, fields));
 
         Map<String, Object> f = new HashMap<>();
         f.put("some", (byte) 1);
@@ -67,13 +68,14 @@ public class FileOperationsTest {
         File tmp = new File(System.getProperty("java.io.tmpdir"));
 
         File tmpDir = new File(tmp, "hprof");
+        FileUtils.deleteDirectory(tmpDir);
         tmpDir.mkdirs();
 
         KryoFileWriter kf = new KryoFileWriter(tmpDir);
 
         Map<String, Type> fields = new HashMap<>();
         fields.put("some", Type.BYTE);
-        ShadowClass type = new ShadowClass(new ClassId(8), null, null, "clazz", 12, fields);
+        ShadowClass type = new ShadowClass(new ClassId(8), null, null, "clazz", 12, 24, fields);
 
         Map<String, Object> f = new HashMap<>();
         f.put("some", (byte) 1);
@@ -107,7 +109,7 @@ public class FileOperationsTest {
     public void testJavascriptBindings() throws Exception {
         Map<String, Type> fields = new HashMap<>();
         fields.put("some", Type.BYTE);
-        ShadowClass type = new ShadowClass(new ClassId(8), null, null, "clazz", 12, fields);
+        ShadowClass type = new ShadowClass(new ClassId(8), null, null, "clazz", 12, 34, fields);
 
         Map<String, Object> f = new HashMap<>();
         f.put("some", (byte) 1);

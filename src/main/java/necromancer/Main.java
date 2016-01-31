@@ -19,6 +19,7 @@ import jline.console.completer.StringsCompleter;
 import jline.console.history.FileHistory;
 import jline.console.history.History;
 import jline.console.history.PersistentHistory;
+import necromancer.data.ShadowClass;
 import necromancer.data.ShadowFactory;
 import necromancer.data.ShadowFactory.ShadowFactorySPI;
 import necromancer.data.kryo.KryoReadonlyShadowFactory;
@@ -49,6 +50,7 @@ public class Main {
             m.prompt(reader);
             System.out.println("Exit\nbye...");
         } finally {
+            ShadowFactory.setInstance(null);
             TerminalFactory.get().restore();
         }
     }
@@ -100,6 +102,7 @@ public class Main {
 
     private void loadFile(String file) throws IOException {
         file = file.trim();
+        ShadowFactory.setInstance(null);
         
         System.out.println("Loading hprof " + file);
         File hprof = new File(file);
@@ -116,6 +119,7 @@ public class Main {
             createCache(file);
         }
 
+        
         KryoReadonlyShadowFactory factory = new KryoReadonlyShadowFactory(dbdir);
         ShadowFactory.setInstance(factory);
         newEngine();
@@ -123,6 +127,8 @@ public class Main {
     }
 
     private void createCache(String hprofFile) throws IOException {
+        ShadowFactory.setInstance(null);
+
         hprofFile = hprofFile.trim();
         File dbdir = new File(hprofFile + ".cache");
         FileUtils.deleteDirectory(dbdir);
@@ -192,7 +198,8 @@ public class Main {
         ShadowFactorySPI f = ShadowFactory.getInstance();
 
         for (String type : f.grepClassName(substring)) {
-            System.out.println(type + ":" + f.findAll(type).size());
+            ShadowClass cz = f.getClassByName(type);
+            System.out.println(type + " : " + cz.getInstanceCount());
         }
     }
 

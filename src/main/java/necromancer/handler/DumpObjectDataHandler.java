@@ -12,7 +12,6 @@ import edu.tufts.eaftan.hprofparser.parser.datastructures.Static;
 import edu.tufts.eaftan.hprofparser.parser.datastructures.Type;
 import edu.tufts.eaftan.hprofparser.parser.datastructures.Value;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
@@ -38,13 +37,31 @@ public class DumpObjectDataHandler extends NullRecordHandler {
 
     private KryoFileWriter writer;
 
-    public DumpObjectDataHandler(File dir) throws FileNotFoundException {
+    public DumpObjectDataHandler(File dir) throws IOException {
         writer = new KryoFileWriter(dir);
     }
 
     @Override
     public void finished() {
         try {
+            for (OwnClassInfo value : classMap.values()) {
+
+                Map<String, Type> fieldmap = new HashMap<>();
+                /* TODO:  Solve invalid field names (obfuscators can assign the same name to many times to different types)
+                Arrays.stream(instanceFields).
+                collect(Collectors.toMap(
+                        i -> i.type + stringMap.get(i.fieldNameStringId),
+                        i -> i.type));*/
+
+                ShadowClass cz = new ShadowClass(
+                        new ClassId(value.classObjId), new ClassId(value.superClassObjId),
+                        new ObjectId(value.classLoaderObjId),
+                        classNameMap.get(value.classObjId).replace('/', '.'), value.instanceSize, value.instances,
+                        fieldmap);
+
+                writer.addClass(cz);
+            }
+
             writer.close();
         } catch (IOException ex) {
             throw new UncheckedIOException(ex);
@@ -105,7 +122,7 @@ public class DumpObjectDataHandler extends NullRecordHandler {
 
         OwnClassInfo ci = classMap.get(classObjId);
         ci.instances++;
-        
+
         ShadowObject obj = new ShadowObject(new ClassId(classObjId), new ObjectId(objId), fieldmap);
         writer.addObject(obj);
 
@@ -118,23 +135,8 @@ public class DumpObjectDataHandler extends NullRecordHandler {
                           int instanceSize, Constant[] constants, Static[] statics, InstanceField[] instanceFields) {
 
         try {
-            Map<String, Type> fieldmap = new HashMap<>();
-            /* TODO:  Solve invalid field names (obfuscators can assign the same name to many times to different types)
-                Arrays.stream(instanceFields).
-                collect(Collectors.toMap(
-                        i -> i.type + stringMap.get(i.fieldNameStringId),
-                        i -> i.type));*/
-
-            ShadowClass cz = new ShadowClass(
-                    new ClassId(classObjId), new ClassId(superClassObjId),
-                    new ObjectId(classLoaderObjId),
-                    classNameMap.get(classObjId).replace('/', '.'), instanceSize,
-                    fieldmap);
-
-            writer.addClass(cz);
-
             // store class info in a hashmap for later access
-            classMap.put(classObjId, new OwnClassInfo(classObjId, superClassObjId, instanceSize,
+            classMap.put(classObjId, new OwnClassInfo(classLoaderObjId, classObjId, superClassObjId, instanceSize,
                     instanceFields));
 
             tick("C", 1000);
@@ -161,9 +163,14 @@ public class DumpObjectDataHandler extends NullRecordHandler {
     public static class OwnClassInfo extends ClassInfo {
 
         public int instances;
+        public long classLoaderObjId;
 
-        public OwnClassInfo(long classObjId, long superClassObjId, int instanceSize, InstanceField[] instanceFields) {
+        public OwnClassInfo(long classLoaderObjId, long classObjId, long superClassObjId, int instanceSize,
+                            InstanceField[] instanceFields) {
             super(classObjId, superClassObjId, instanceSize, instanceFields);
+            this.classLoaderObjId = classLoaderObjId;
         }
+
+        
     }
 }

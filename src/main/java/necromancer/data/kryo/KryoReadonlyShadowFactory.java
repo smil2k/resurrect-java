@@ -8,11 +8,10 @@ import com.esotericsoftware.kryo.io.Input;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import gnu.trove.map.TLongLongMap;
-import gnu.trove.map.hash.TLongLongHashMap;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.Channels;
 import java.util.ArrayList;
@@ -30,6 +29,12 @@ import necromancer.data.ObjectId;
 import necromancer.data.ShadowClass;
 import necromancer.data.ShadowFactory.ShadowFactorySPI;
 import necromancer.data.ShadowObjectArray;
+import org.iq80.leveldb.DB;
+import org.iq80.leveldb.Options;
+
+import static org.iq80.leveldb.impl.Iq80DBFactory.asString;
+import static org.iq80.leveldb.impl.Iq80DBFactory.bytes;
+import static org.iq80.leveldb.impl.Iq80DBFactory.factory;
 
 public class KryoReadonlyShadowFactory implements ShadowFactorySPI {
 
@@ -41,7 +46,8 @@ public class KryoReadonlyShadowFactory implements ShadowFactorySPI {
     private File bref;
     private File cgroup;
 
-    private TLongLongMap objectOffsets = new TLongLongHashMap(100000, 0.75f, -1, -1);
+    private DB oindex;
+    
 
     private LoadingCache<ClassId, Set<ObjectId>> objectsByClass
             = CacheBuilder.newBuilder().
@@ -78,10 +84,12 @@ public class KryoReadonlyShadowFactory implements ShadowFactorySPI {
                         return NULL;
                     }
 
-                    long offset = objectOffsets.get(k.getObjectId());
-                    if (offset == -1) {
+                    String offsetHex = asString(oindex.get(bytes(Long.toHexString(k.getObjectId()))));
+                    if (offsetHex == null) {
                         throw new IllegalStateException(k.getObjectId() + " has no offset.");
                     }
+
+                    long offset = Long.parseLong(offsetHex, 16);
 
                     objectStore.seek(offset);
                     Kryo kryo = NecromancerKryo.getInstance();
@@ -95,14 +103,17 @@ public class KryoReadonlyShadowFactory implements ShadowFactorySPI {
 
     private final RandomAccessFile objectStore;
 
-    public KryoReadonlyShadowFactory(File dbdir) throws FileNotFoundException {
+    public KryoReadonlyShadowFactory(File dbdir) throws IOException {
         objectStore = new RandomAccessFile(new File(dbdir, "objects.db"), "r");
 
         loadClassIndex(new File(dbdir, "cindex.db"));
-        loadObjectIndex(new File(dbdir, "oindex.db"));
 
         bref = new File(dbdir, "bref.db");
         cgroup = new File(dbdir, "cgroup.db");
+        
+        Options options = new Options();
+        options.createIfMissing(true);
+        oindex = factory.open(new File(dbdir, "oindex.db"), options);
     }
 
     @Override
@@ -172,23 +183,6 @@ public class KryoReadonlyShadowFactory implements ShadowFactorySPI {
         System.out.println();
     }
 
-    private void loadObjectIndex(File file) throws FileNotFoundException {
-        System.out.print("Loading object data...");
-        int c = 0;
-        try (Input input = new Input(new FileInputStream(file))) {
-            Kryo kryo = NecromancerKryo.getInstance();
-            while (input.eof() == false) {
-                TwoLong s = kryo.readObject(input, TwoLong.class);
-                objectOffsets.put(s.getKey(), s.getValue());
-                if (c % 100000 == 0) {
-                    System.out.print(".");
-                }
-                c++;
-            }
-        }
-        System.out.println();
-    }
-
     @Override
     public Collection<String> grepClassName(String name) {
         return types.keySet().stream().
@@ -199,6 +193,11 @@ public class KryoReadonlyShadowFactory implements ShadowFactorySPI {
     @Override
     public void setObjectResolver(Function f) {
         resolver = f;
+    }
+
+    @Override
+    public void close() throws IOException{
+        oindex.close();
     }
 
 }
