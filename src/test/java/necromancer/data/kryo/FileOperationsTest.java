@@ -42,7 +42,6 @@ public class FileOperationsTest {
         ShadowObject so = new ShadowObject(new ClassId(8), new ObjectId(1), f);
 
         runKryo(so);
-        runKryo(new KryoObject(new ClassId(0), new ObjectId(1), true, Type.BYTE, 0));
     }
 
     private void runKryo(Object obj) {

@@ -34,7 +34,7 @@ public class DumpObjectDataHandler extends NullRecordHandler {
 
     private Map<Long, String> stringMap = new HashMap<>();
     private Map<Long, String> classNameMap = new HashMap<>();
-    private HashMap<Long, ClassInfo> classMap = new HashMap<Long, ClassInfo>();
+    private Map<Long, OwnClassInfo> classMap = new HashMap<>();
 
     private KryoFileWriter writer;
 
@@ -103,6 +103,9 @@ public class DumpObjectDataHandler extends NullRecordHandler {
             assert i == instanceFieldValues.length;
         }
 
+        OwnClassInfo ci = classMap.get(classObjId);
+        ci.instances++;
+        
         ShadowObject obj = new ShadowObject(new ClassId(classObjId), new ObjectId(objId), fieldmap);
         writer.addObject(obj);
 
@@ -115,33 +118,33 @@ public class DumpObjectDataHandler extends NullRecordHandler {
                           int instanceSize, Constant[] constants, Static[] statics, InstanceField[] instanceFields) {
 
         try {
-        Map<String, Type> fieldmap = new HashMap<>();
-        /* TODO:  Solve invalid field names (obfuscators can assign the same name to many times to different types)
+            Map<String, Type> fieldmap = new HashMap<>();
+            /* TODO:  Solve invalid field names (obfuscators can assign the same name to many times to different types)
                 Arrays.stream(instanceFields).
                 collect(Collectors.toMap(
                         i -> i.type + stringMap.get(i.fieldNameStringId),
                         i -> i.type));*/
 
-        ShadowClass cz = new ShadowClass(
-                new ClassId(classObjId), new ClassId(superClassObjId),
-                new ObjectId(classLoaderObjId),
-                classNameMap.get(classObjId).replace('/', '.'), instanceSize,
-                fieldmap);
+            ShadowClass cz = new ShadowClass(
+                    new ClassId(classObjId), new ClassId(superClassObjId),
+                    new ObjectId(classLoaderObjId),
+                    classNameMap.get(classObjId).replace('/', '.'), instanceSize,
+                    fieldmap);
 
-        writer.addClass(cz);
+            writer.addClass(cz);
 
-        // store class info in a hashmap for later access
-        classMap.put(classObjId, new ClassInfo(classObjId, superClassObjId, instanceSize,
-                instanceFields));
+            // store class info in a hashmap for later access
+            classMap.put(classObjId, new OwnClassInfo(classObjId, superClassObjId, instanceSize,
+                    instanceFields));
 
-        tick("C", 1000);
+            tick("C", 1000);
         } catch (Exception ex) {
-            System.out.println("Wrong class: " +classObjId);
+            System.out.println("Wrong class: " + classObjId);
             for (InstanceField field : instanceFields) {
-                System.out.print("    " + stringMap.get(field.fieldNameStringId) );
-                System.out.println(" " + field.type );
+                System.out.print("    " + stringMap.get(field.fieldNameStringId));
+                System.out.println(" " + field.type);
             }
-            throw ex;            
+            throw ex;
         }
     }
 
@@ -155,4 +158,12 @@ public class DumpObjectDataHandler extends NullRecordHandler {
         stringMap.put(id, data);
     }
 
+    public static class OwnClassInfo extends ClassInfo {
+
+        public int instances;
+
+        public OwnClassInfo(long classObjId, long superClassObjId, int instanceSize, InstanceField[] instanceFields) {
+            super(classObjId, superClassObjId, instanceSize, instanceFields);
+        }
+    }
 }

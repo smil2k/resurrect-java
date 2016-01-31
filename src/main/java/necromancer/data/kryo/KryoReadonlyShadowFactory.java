@@ -8,8 +8,8 @@ import com.esotericsoftware.kryo.io.Input;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
+import gnu.trove.map.TLongLongMap;
+import gnu.trove.map.hash.TLongLongHashMap;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -38,9 +38,33 @@ public class KryoReadonlyShadowFactory implements ShadowFactorySPI {
     private Map<ClassId, ShadowClass> loadedClasses = new HashMap<>();
     private Map<String, ShadowClass> types = new HashMap();
 
-    private Map<ObjectId, KryoObject> objects = new HashMap<>();
-    private Multimap<ClassId, ObjectId> objectsByClass
-            = Multimaps.newSetMultimap(new HashMap<ClassId, Collection<ObjectId>>(), HashSet::new);
+    private File bref;
+    private File cgroup;
+
+    private TLongLongMap objectOffsets = new TLongLongHashMap(100000, 0.75f, -1, -1);
+
+    private LoadingCache<ClassId, Set<ObjectId>> objectsByClass
+            = CacheBuilder.newBuilder().
+            maximumSize(100000).
+            build(new CacheLoader<ClassId, Set<ObjectId>>() {
+                @Override
+                public synchronized Set<ObjectId> load(ClassId k) throws Exception {
+                    Kryo kryo = NecromancerKryo.getInstance();
+                    Input cgInput = new Input(new FileInputStream(cgroup));
+                    Set<ObjectId> result = new HashSet<>();
+                    while (cgInput.eof() == false) {
+                        TwoLong tl = kryo.readObject(cgInput, TwoLong.class);
+                        if (tl.getKey() == k.getClassId()) {
+                            result.add(new ObjectId(tl.getValue()));
+                        }
+                    }
+
+                    cgInput.close();
+
+                    return result;
+                }
+
+            });
 
     private Function<Object, Object> resolver;
 
@@ -54,14 +78,17 @@ public class KryoReadonlyShadowFactory implements ShadowFactorySPI {
                         return NULL;
                     }
 
-                    KryoObject obj = getKryoObject(k);
+                    long offset = objectOffsets.get(k.getObjectId());
+                    if (offset == -1) {
+                        throw new IllegalStateException(k.getObjectId() + " has no offset.");
+                    }
 
-                    objectStore.seek(obj.getOffset());
+                    objectStore.seek(offset);
                     Kryo kryo = NecromancerKryo.getInstance();
 
                     Input input = new Input(Channels.newInputStream(objectStore.getChannel()));
 
-                    Object o = kryo.readObject(input, obj.getClassForPersistence());
+                    Object o = kryo.readClassAndObject(input);
                     return o;
                 }
             });
@@ -73,6 +100,9 @@ public class KryoReadonlyShadowFactory implements ShadowFactorySPI {
 
         loadClassIndex(new File(dbdir, "cindex.db"));
         loadObjectIndex(new File(dbdir, "oindex.db"));
+
+        bref = new File(dbdir, "bref.db");
+        cgroup = new File(dbdir, "cgroup.db");
     }
 
     @Override
@@ -108,23 +138,18 @@ public class KryoReadonlyShadowFactory implements ShadowFactorySPI {
         }
     }
 
-    private KryoObject getKryoObject(ObjectId id) throws IllegalArgumentException {
-        KryoObject obj = objects.get(id);
-        if (obj == null) {
-            throw new IllegalArgumentException("Class not found " + id);
-        }
-
-        return obj;
-    }
-
     public Collection<Object> findAll(String name) {
-        ShadowClass type = types.get(name);
-        if (type == null) {
-            throw new IllegalArgumentException("Class not found : " + name);
-        }
+        try {
+            ShadowClass type = types.get(name);
+            if (type == null) {
+                throw new IllegalArgumentException("Class not found : " + name);
+            }
 
-        Set<ObjectId> list = (Set<ObjectId>) objectsByClass.get(type.getClassId());
-        return new ShadowObjectArray(null, new ArrayList(list));
+            Set<ObjectId> list = (Set<ObjectId>) objectsByClass.get(type.getClassId());
+            return new ShadowObjectArray(null, new ArrayList(list));
+        } catch (ExecutionException ex) {
+            throw new IllegalStateException(ex);
+        }
     }
 
     private void loadClassIndex(File file) throws FileNotFoundException {
@@ -153,9 +178,8 @@ public class KryoReadonlyShadowFactory implements ShadowFactorySPI {
         try (Input input = new Input(new FileInputStream(file))) {
             Kryo kryo = NecromancerKryo.getInstance();
             while (input.eof() == false) {
-                KryoObject s = kryo.readObject(input, KryoObject.class);
-                objects.put(s.getObjectId(), s);
-                objectsByClass.put(s.getClassId(), s.getObjectId());
+                TwoLong s = kryo.readObject(input, TwoLong.class);
+                objectOffsets.put(s.getKey(), s.getValue());
                 if (c % 100000 == 0) {
                     System.out.print(".");
                 }

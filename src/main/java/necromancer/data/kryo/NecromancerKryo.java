@@ -8,6 +8,7 @@ import com.esotericsoftware.kryo.Kryo.DefaultInstantiatorStrategy;
 import edu.tufts.eaftan.hprofparser.parser.datastructures.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import necromancer.data.ClassId;
 import necromancer.data.ObjectId;
 import necromancer.data.ShadowClass;
@@ -19,30 +20,25 @@ public class NecromancerKryo {
 
     public static Kryo getInstance() {
         Kryo instance = new Kryo();
-        instance.register(ShadowClass.class, 24);
         instance.register(ShadowObject.class, 10);
         instance.register(ShadowObjectArray.class, 11);
-        instance.register(ObjectId.class, 12);
-        instance.register(ClassId.class, 13);
-        instance.register(KryoObject.class, 14);
+        instance.register(ShadowClass.class, 12);
 
-        instance.register(Integer.class, 15);
-        instance.register(Short.class, 16);
-        instance.register(Long.class, 17);
-        instance.register(Character.class, 18);
-        instance.register(Float.class, 19);
-        instance.register(Double.class, 20);
-        instance.register(Byte.class, 21);
-        instance.register(HashMap.class, 22);
-        instance.register(ArrayList.class, 23);
-        instance.register(Type.class, 25);
+        instance.register(ObjectId.class, 13);
+        instance.register(ClassId.class, 14);
+
+        instance.register(HashMap.class, 16);
+        instance.register(HashSet.class, 17);
+        instance.register(ArrayList.class, 18);
+        instance.register(Type.class, 19);
+        instance.register(TwoLong.class, 20);
 
         instance.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
 
         instance.setAutoReset(false);
         instance.setReferences(false);
         instance.setRegistrationRequired(true);
-        
+
         return instance;
     }
 }

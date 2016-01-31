@@ -23,6 +23,9 @@ public class KryoFileWriter implements Closeable {
     private Output cindex;
     private Output oindex;
 
+    private Output bref;
+    private Output cgroup;
+
     private Output objectStore;
 
     private Kryo kryo;
@@ -30,46 +33,61 @@ public class KryoFileWriter implements Closeable {
     public KryoFileWriter(File file) throws FileNotFoundException {
         file.mkdirs();
         cindex = new Output(new FileOutputStream(new File(file, "cindex.db")));
+        cgroup = new Output(new FileOutputStream(new File(file, "cgroup.db")));
+        bref = new Output(new FileOutputStream(new File(file, "bref.db")));
         oindex = new Output(new FileOutputStream(new File(file, "oindex.db")));
         objectStore = new Output(new FileOutputStream(new File(file, "objects.db")));
+
+    /*   Options options = new Options();
+        options.createIfMissing(true);
+        DB db = factory.open(new File("example"), options);*/
 
         kryo = NecromancerKryo.getInstance();
     }
 
     public void addObject(ShadowObject obj) {
-        KryoObject kobj = new KryoObject(obj.getClassId(), obj.getObjectId(), false, Type.OBJ, objectStore.total());
-        addKryoObject(kobj, obj);
+        addKryoObject(obj.getObjectId(), obj);
+
+        for (Object value : obj.getFields().values()) {
+            if (value instanceof ObjectId) {
+                kryo.writeObject(bref,
+                        new TwoLong(((ObjectId) value).getObjectId(), obj.getObjectId().getObjectId()));
+            }
+        }
+
+        kryo.writeObject(cgroup,
+                new TwoLong(obj.getClassId().getClassId(), obj.getObjectId().getObjectId()));
     }
 
     public void addArray(ShadowObjectArray obj) {
-        KryoObject kobj = new KryoObject(null, obj.getObjectId(), true, Type.OBJ, objectStore.total());
-        addKryoObject(kobj, obj);
-    }
+        addKryoObject(obj.getObjectId(), obj);
 
-    public void addPrimitiveArray(ObjectId id, Type type, Collection<?> list) {
-        KryoObject obj = new KryoObject(null, id, true, type, objectStore.total());
-
-        if (type == Type.CHAR) {
-            StringBuilder s = new StringBuilder(list.size());
-            list.stream().forEach((chr) -> {
-                        s.append((char)(Character)chr);
-            });
-            addKryoObject(obj, s.toString());
-        } else {
-            addKryoObject(obj, new ArrayList(list));
+        for (ObjectId object : obj.getObjectIdArray()) {
+            kryo.writeObject(bref,
+                    new TwoLong(object.getObjectId(), obj.getObjectId().getObjectId()));
         }
     }
 
-    private void addKryoObject(KryoObject kobj, Object obj) {
-        kryo.writeObject(objectStore, obj);
-        kryo.writeObject(oindex, kobj);
+    public void addPrimitiveArray(ObjectId id, Type type, Collection<?> list) {
+        if (type == Type.CHAR) {
+            StringBuilder s = new StringBuilder(list.size());
+            list.stream().forEach((chr) -> {
+                s.append((char) (Character) chr);
+            });
+            addKryoObject(id, s.toString());
+        } else {
+            addKryoObject(id, new ArrayList(list));
+        }
+    }
+
+    private void addKryoObject(ObjectId id, Object obj) {
+        kryo.writeObject(oindex, new TwoLong(id.getObjectId(), objectStore.total()));
+        kryo.writeClassAndObject(objectStore, obj);
 
     }
 
     public void addClass(ShadowClass type) {
-        KryoObject kobj = new KryoObject(null, new ObjectId(type.getClassId().getClassId()), false,
-                Type.OBJ, objectStore.total());
-        addKryoObject(kobj, type);
+        addKryoObject(new ObjectId(type.getClassId().getClassId()), type);
         kryo.writeObject(cindex, type);
     }
 
@@ -78,5 +96,14 @@ public class KryoFileWriter implements Closeable {
         cindex.close();
         oindex.close();
         objectStore.close();
+        bref.close();
+        cgroup.close();
+
+        objectStore = null;
+        oindex = null;
+        cindex = null;
+        bref = null;
+        cgroup = null;
     }
+
 }

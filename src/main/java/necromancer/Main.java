@@ -130,6 +130,8 @@ public class Main {
         HprofParser parser = new HprofParser(new DumpObjectDataHandler(dbdir));
         parser.parse(new File(hprofFile));
         System.out.println();
+        parser = null;
+        System.gc();
         loadFile(hprofFile);
     }
 
