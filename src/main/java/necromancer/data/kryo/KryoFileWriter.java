@@ -49,6 +49,10 @@ public class KryoFileWriter implements Closeable {
         kryo = NecromancerKryo.getInstance();
     }
 
+    public void setTimestamp( long taken) {
+        oindex.put(bytes("now"), bytes(Long.toHexString(taken)));
+    }
+    
     public void addObject(ShadowObject obj) {
         addKryoObject(obj.getObjectId(), obj);
 

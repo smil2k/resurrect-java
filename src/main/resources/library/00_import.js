@@ -24,4 +24,3 @@ function getObject(name) {
 function importFile(name) {
   return factory.importFile(name);
 }
-

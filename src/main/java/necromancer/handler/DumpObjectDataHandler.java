@@ -42,29 +42,37 @@ public class DumpObjectDataHandler extends NullRecordHandler {
     }
 
     @Override
-    public void finished() {
-        try {
-            for (OwnClassInfo value : classMap.values()) {
+    public void header(String format, int idSize, long time) {
+        writer.setTimestamp(time);
+    }
 
-                Map<String, Type> fieldmap = new HashMap<>();
-                /* TODO:  Solve invalid field names (obfuscators can assign the same name to many times to different types)
+    @Override
+    public void finished() {
+        if (writer != null) {
+            try {
+                for (OwnClassInfo value : classMap.values()) {
+
+                    Map<String, Type> fieldmap = new HashMap<>();
+                    /* TODO:  Solve invalid field names (obfuscators can assign the same name to many times to different types)
                 Arrays.stream(instanceFields).
                 collect(Collectors.toMap(
                         i -> i.type + stringMap.get(i.fieldNameStringId),
                         i -> i.type));*/
 
-                ShadowClass cz = new ShadowClass(
-                        new ClassId(value.classObjId), new ClassId(value.superClassObjId),
-                        new ObjectId(value.classLoaderObjId),
-                        classNameMap.get(value.classObjId).replace('/', '.'), value.instanceSize, value.instances,
-                        fieldmap);
+                    ShadowClass cz = new ShadowClass(
+                            new ClassId(value.classObjId), new ClassId(value.superClassObjId),
+                            new ObjectId(value.classLoaderObjId),
+                            classNameMap.get(value.classObjId).replace('/', '.'), value.instanceSize, value.instances,
+                            fieldmap);
 
-                writer.addClass(cz);
+                    writer.addClass(cz);
+                }
+
+                writer.close();
+                writer = null;
+            } catch (IOException ex) {
+                throw new UncheckedIOException(ex);
             }
-
-            writer.close();
-        } catch (IOException ex) {
-            throw new UncheckedIOException(ex);
         }
     }
 
@@ -171,6 +179,5 @@ public class DumpObjectDataHandler extends NullRecordHandler {
             this.classLoaderObjId = classLoaderObjId;
         }
 
-        
     }
 }

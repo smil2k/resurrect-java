@@ -6,8 +6,11 @@
 var handlers = {};
 
 function RegisterHandler(type, func) {
+  try {
   var classId = factory.getClassByName(type).classId;
-  handlers["" + classId.classId] = func;
+    handlers["" + classId.classId] = func;
+  } catch (e) {
+  }
 }
 
 factory.setObjectResolver(function (obj) {
@@ -18,26 +21,3 @@ factory.setObjectResolver(function (obj) {
   }
 });
 
-/**
- * Describe Object instance
- */
-function describeObject(obj) {
-  logger.print("class ");
-  if (obj.className) {
-    logger.print(obj.className);
-  } else {
-    logger.print(obj.class.name);
-  }
-  logger.println(" {");
-  for (var key in obj) {
-    //  if (obj.containsKey(key)) {
-    logger.print("     " + key + ": ");
-    var v = obj[key];
-    if (v instanceof java.lang.String) {
-      logger.println("\"" + v + "\"");
-    } else {
-      logger.println(v);
-    }
-  }
-  logger.println("}");
-}

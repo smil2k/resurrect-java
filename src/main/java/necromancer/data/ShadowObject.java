@@ -13,15 +13,21 @@ import lombok.Value;
 @Value
 @DefaultSerializer(FieldSerializer.class)
 public class ShadowObject implements Map<String, Object> {
+
     private ClassId classId;
     private ObjectId objectId;
 
     private Map<String, Object> fields;
 
+    public String toString() {
+        return "object " + getType().getClassName() + "{" + objectId.getObjectId() + "}{" + fields.keySet() + "}";
+
+    }
+
     public Set<String> getFieldNames() {
         return fields.keySet();
     }
-    
+
     public ShadowClass getType() {
         return ShadowFactory.getInstance().getClass(classId);
     }
@@ -29,7 +35,7 @@ public class ShadowObject implements Map<String, Object> {
     public String getClassName() {
         return getType().getClassName();
     }
-    
+
     public Object put(String name, Object value) {
         throw new UnsupportedOperationException();
     }
@@ -88,4 +94,5 @@ public class ShadowObject implements Map<String, Object> {
     public Set<Entry<String, Object>> entrySet() {
         return fields.entrySet();
     }
+
 }

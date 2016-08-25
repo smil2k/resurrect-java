@@ -5,6 +5,7 @@ package necromancer.data;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Date;
 import java.util.function.Function;
 import lombok.Getter;
 
@@ -26,6 +27,8 @@ public class ShadowFactory {
 
     public interface ShadowFactorySPI {
 
+        Date getSnapshotTime();
+        
         ShadowClass getClass(ClassId type);
 
         ShadowClass getClassByName(String type);

@@ -16,6 +16,7 @@ import java.io.RandomAccessFile;
 import java.nio.channels.Channels;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -48,6 +49,7 @@ public class KryoReadonlyShadowFactory implements ShadowFactorySPI {
 
     private DB oindex;
     
+    private Date snapshotTime;
 
     private LoadingCache<ClassId, Set<ObjectId>> objectsByClass
             = CacheBuilder.newBuilder().
@@ -114,6 +116,8 @@ public class KryoReadonlyShadowFactory implements ShadowFactorySPI {
         Options options = new Options();
         options.createIfMissing(true);
         oindex = factory.open(new File(dbdir, "oindex.db"), options);
+        
+        snapshotTime = new Date(Long.parseLong(asString(oindex.get(bytes("now"))), 16));
     }
 
     @Override
@@ -125,6 +129,13 @@ public class KryoReadonlyShadowFactory implements ShadowFactorySPI {
         return s;
     }
 
+    @Override
+    public Date getSnapshotTime() {
+        return snapshotTime;
+    }
+
+    
+    
     public ShadowClass getClass(ClassId type) {
         ShadowClass s = loadedClasses.get(type);
         if (s == null) {
@@ -186,7 +197,7 @@ public class KryoReadonlyShadowFactory implements ShadowFactorySPI {
     @Override
     public Collection<String> grepClassName(String name) {
         return types.keySet().stream().
-                filter(s -> s.contains(name)).
+                filter(s -> s.toLowerCase().contains(name.toLowerCase())).
                 collect(Collectors.toCollection(TreeSet::new));
     }
 

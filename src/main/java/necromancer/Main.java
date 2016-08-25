@@ -58,7 +58,7 @@ public class Main {
     private ScriptEngine engine;
 
     private void prompt(ConsoleReader reader) throws IOException {
-        reader.addCompleter(new StringsCompleter("load ", "eval ", "loadlibrary ", "grepclass ", "source ",
+        reader.addCompleter(new StringsCompleter("load ", "eval ", "loadlibrary ", "grepobj ", "grepclass ", "source ",
                 "rebuildcache ", "reset", "exit"));
 
         while (true) {
@@ -76,12 +76,12 @@ public class Main {
             try {
                 if (line.startsWith("load ")) {
                     loadFile(line.substring(5));
-                } else if (line.startsWith("eval ")) {
-                    eval(line.substring(5));
                 } else if (line.startsWith("loadlibrary ")) {
                     evalScript(new FileReader(line.substring(12)));
+                } else if (line.startsWith("grepobj ")) {
+                    grep(line.substring(8), false);
                 } else if (line.startsWith("grepclass ")) {
-                    grep(line.substring(10));
+                    grep(line.substring(10), true);
                 } else if (line.startsWith(". ")) {
                     importScript(line.substring(2));
                 } else if (line.startsWith("source ")) {
@@ -93,17 +93,19 @@ public class Main {
                     loadJsLibrary();
                 } else if (line.startsWith("exit")) {
                     break;
+                } else {
+                    eval(line);
                 }
-            } catch (IOException ex) {
+            } catch (InterruptedException | IOException ex) {
                 System.out.println("IO error:" + ex.getMessage());
             }
         }
     }
 
-    private void loadFile(String file) throws IOException {
+    private void loadFile(String file) throws IOException, InterruptedException {
         file = file.trim();
         ShadowFactory.setInstance(null);
-        
+
         System.out.println("Loading hprof " + file);
         File hprof = new File(file);
         if (hprof.exists() == false || hprof.isDirectory()) {
@@ -118,23 +120,24 @@ public class Main {
         } else {
             createCache(file);
         }
-
-        
+       
         KryoReadonlyShadowFactory factory = new KryoReadonlyShadowFactory(dbdir);
         ShadowFactory.setInstance(factory);
         newEngine();
         loadJsLibrary();
     }
 
-    private void createCache(String hprofFile) throws IOException {
+    private void createCache(String hprofFile) throws IOException, InterruptedException {
         ShadowFactory.setInstance(null);
 
         hprofFile = hprofFile.trim();
         File dbdir = new File(hprofFile + ".cache");
         FileUtils.deleteDirectory(dbdir);
 
-        HprofParser parser = new HprofParser(new DumpObjectDataHandler(dbdir));
-        parser.parse(new File(hprofFile));
+        DumpObjectDataHandler handler= new DumpObjectDataHandler(dbdir);
+        HprofParser parser = new HprofParser(handler);
+        parser.parse(new File(hprofFile), hprofFile.endsWith(".gz"));
+        
         System.out.println();
         parser = null;
         System.gc();
@@ -152,7 +155,7 @@ public class Main {
 
     private void loadJsLibrary() throws IOException {
         PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
-        for (Resource r : resolver.getResources("classpath:/library/*.js")) {
+        for (Resource r : resolver.getResources("classpath:/library/**/*.js")) {
             Reader rd = new InputStreamReader(r.getInputStream(), "UTF-8");
             System.out.println("Loading lib " + r.getFilename());
             evalScript(rd);
@@ -193,13 +196,15 @@ public class Main {
         }
     }
 
-    private void grep(String substring) throws IOException {
+    private void grep(String substring, boolean showAll) throws IOException {
         assertFactory();
         ShadowFactorySPI f = ShadowFactory.getInstance();
 
         for (String type : f.grepClassName(substring)) {
             ShadowClass cz = f.getClassByName(type);
-            System.out.println(type + " : " + cz.getInstanceCount());
+            if (showAll || cz.getInstanceCount() != 0) {
+                System.out.println(type + " : " + cz.getInstanceCount());
+            }
         }
     }
 
