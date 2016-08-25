@@ -37,8 +37,10 @@ import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.zip.GZIPInputStream;
 
 /**
  * Parses an hprof heap dump file in binary format.  The hprof dump file format is documented in
@@ -54,7 +56,7 @@ public class HprofParser {
     classMap = new HashMap<Long, ClassInfo>();
   } 
 
-  public void parse(File file) throws IOException {
+  public void parse(File file, boolean gz) throws IOException {
 
     /* The file format looks like this:
      *
@@ -74,7 +76,10 @@ public class HprofParser {
      *   [u1]* - body
      */
 
-    FileInputStream fs = new FileInputStream(file);
+    InputStream fs = new FileInputStream(file);
+    if ( gz ) {
+        fs = new GZIPInputStream(fs);
+    }    
     DataInputStream in = new DataInputStream(new BufferedInputStream(fs));
 
     // header
@@ -90,7 +95,10 @@ public class HprofParser {
     } while (!done);
     in.close();
 
-    FileInputStream fsSecond = new FileInputStream(file);
+    InputStream fsSecond = new FileInputStream(file);
+    if ( gz ) {
+        fsSecond = new GZIPInputStream(fsSecond);
+    }
     DataInputStream inSecond = new DataInputStream(new BufferedInputStream(fsSecond));
     readUntilNull(inSecond); // format
     inSecond.readInt(); // idSize
