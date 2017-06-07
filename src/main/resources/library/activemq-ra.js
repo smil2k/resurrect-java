@@ -72,22 +72,6 @@ function showClient(id) {
   }
 }
 
-function listClientConnections() {
-  var c = factory.findAll("org.apache.activemq.ActiveMQConnection");
-
-  _printRaHeader();
-
-  var cx = 0;
-  for (var i = 0; i < c.size(); i++) {
-    var conn = c[i];
-    if (conn.started === "true") {
-      cx++;
-      _printRaLine(conn);
-    }
-  }
-  logger.println(cx + " connections.");
-}
-
 function _printRaHeader() {
   logger.printf("\n\n%15s | %65s | %3s | %3s | %3s | %5s | %5s | %5s | %5s\n",
           "ObjId", "Client ID", "Dis", "Ses", "Con", "Start", "Closd", "Faild", "Created");

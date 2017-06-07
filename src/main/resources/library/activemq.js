@@ -9,6 +9,10 @@ RegisterHandler("org.apache.activemq.command.ConnectionId", function (obj) {
   return obj.value;
 });
 
+RegisterHandler("org.apache.activemq.command.SessionId", function (obj) {
+  return obj.connectionId + ":" + obj.value;
+});
+
 RegisterHandler("org.apache.activemq.command.ConsumerId", function (obj) {
   return obj.connectionId + ":" + obj.sessionId + ":" + obj.value;
 });
@@ -65,6 +69,37 @@ function listAllQueueSubscribers(broker, queue) {
           });
 
   logger.println("Message count=" + msg);
+}
+
+function listClients(broker, queue, host) {
+  var con = 0;
+  if (!queue) {
+    queue = "";
+  }
+    if (!host) {
+    host = "";
+  }
+
+  logger.println("xx|XX|xx\n");
+
+  _visitSubscribers(broker,
+      function (sub) {
+        if (sub.subscription.destinationFilter.destination.physicalName.contains(queue)
+        && sub.clientId.contains(host)) {
+
+            logger.printf("%45s | %40s | %5s | %40s | %s\n",
+              sub.subscription.destinationFilter.destination.physicalName,
+              sub.clientId,
+              sub.subscription.dispatched.size(),
+              sub.subscription.context.connectionId,
+              formatTimeUnixMs(sub.subscription.lastAckTime)
+              );
+
+          con ++;
+        }
+      });
+
+  logger.println("Consumer count=" + con);
 }
 
 function listSlowQueueSubscribers(broker, queue) {
@@ -152,18 +187,19 @@ function _printMessageRef(msg) {
 }
 
 function _printSubHeader() {
-  logger.printf("\n\n%45s | %65s | %10s | %5s | %7s | %7s |\n",
-          "Queue", "Client ID", "User Name", "Slow?", "Enc", "Cons");
+  logger.printf("\n\n%45s | %65s | %10s | %5s | %7s | %7s | %7s\n",
+          "Queue", "Client ID", "User Name", "Slow?", "Enc", "Cons", "Disp");
 }
 
 function _printSub(sub) {
-  logger.printf("%45s | %65s | %10s | %5s | %7s | %7s |\n",
+  logger.printf("%45s | %65s | %10s | %5s | %7s | %7s | %7s\n",
           sub.subscription.destinationFilter.destination.physicalName,
           sub.clientId,
           sub.userName,
           sub.subscription.slowConsumer,
           sub.subscription.enqueueCounter,
-          sub.subscription.consumedCount);
+          sub.subscription.consumedCount,
+          sub.subscription.dispatched.size());
 }
 
 RegisterHandler("org.apache.activemq.util.ByteSequence", function (obj) {

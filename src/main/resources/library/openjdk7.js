@@ -21,6 +21,10 @@ RegisterHandler("java.util.concurrent.ConcurrentHashMap", function (obj) {
   return result;
 });
 
+RegisterHandler("java.util.Collections$SynchronizedRandomAccessList", function (obj) {
+  return obj.c;
+});
+
 RegisterHandler("java.util.HashMap", function (obj) {
   var result = new HashMap();
 
@@ -44,6 +48,18 @@ RegisterHandler("java.util.LinkedList", function (obj) {
     res.add(x.element);
     x = x.next;
     s--;
+  }
+
+  return res;
+});
+
+RegisterHandler("java.util.concurrent.ConcurrentLinkedQueue", function (obj) {
+  var res = new java.util.ArrayList();
+
+  var x = obj.head;  
+  while ( x ) {
+    res.add(x.item);
+    x = x.next;
   }
 
   return res;
