@@ -68,7 +68,7 @@ public class AllExampleHandlersTest {
     
     for (RecordHandler handler : ALL_HANDLERS) {
       HprofParser parser = new HprofParser(handler);
-      parser.parse(new File(testFilePath));
+      parser.parse(new File(testFilePath), false);
     }
   }
 

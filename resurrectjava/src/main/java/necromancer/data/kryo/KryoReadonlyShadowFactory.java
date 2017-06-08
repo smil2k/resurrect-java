@@ -48,60 +48,56 @@ public class KryoReadonlyShadowFactory implements ShadowFactorySPI {
     private File cgroup;
 
     private DB oindex;
-    
+
     private Date snapshotTime;
 
-    private LoadingCache<ClassId, Set<ObjectId>> objectsByClass
-            = CacheBuilder.newBuilder().
-            maximumSize(100000).
-            build(new CacheLoader<ClassId, Set<ObjectId>>() {
-                @Override
-                public synchronized Set<ObjectId> load(ClassId k) throws Exception {
-                    Kryo kryo = NecromancerKryo.getInstance();
-                    Input cgInput = new Input(new FileInputStream(cgroup));
-                    Set<ObjectId> result = new HashSet<>();
-                    while (cgInput.eof() == false) {
-                        TwoLong tl = kryo.readObject(cgInput, TwoLong.class);
-                        if (tl.getKey() == k.getClassId()) {
-                            result.add(new ObjectId(tl.getValue()));
-                        }
+    private LoadingCache<ClassId, Set<ObjectId>> objectsByClass = CacheBuilder.newBuilder().maximumSize(100000)
+        .build(new CacheLoader<ClassId, Set<ObjectId>>() {
+            @Override
+            public synchronized Set<ObjectId> load(ClassId k) throws Exception {
+                Kryo kryo = NecromancerKryo.getInstance();
+                Input cgInput = new Input(new FileInputStream(cgroup));
+                Set<ObjectId> result = new HashSet<>();
+                while (cgInput.eof() == false) {
+                    TwoLong tl = kryo.readObject(cgInput, TwoLong.class);
+                    if (tl.getKey() == k.getClassId()) {
+                        result.add(new ObjectId(tl.getValue()));
                     }
-
-                    cgInput.close();
-
-                    return result;
                 }
 
-            });
+                cgInput.close();
+
+                return result;
+            }
+
+        });
 
     private Function<Object, Object> resolver;
 
-    private LoadingCache<ObjectId, Object> objectCache
-            = CacheBuilder.newBuilder().
-            maximumSize(100000).
-            build(new CacheLoader<ObjectId, Object>() {
-                @Override
-                public synchronized Object load(ObjectId k) throws Exception {
-                    if (k == null || k.getObjectId() == 0) {
-                        return NULL;
-                    }
-
-                    String offsetHex = asString(oindex.get(bytes(Long.toHexString(k.getObjectId()))));
-                    if (offsetHex == null) {
-                        throw new IllegalStateException(k.getObjectId() + " has no offset.");
-                    }
-
-                    long offset = Long.parseLong(offsetHex, 16);
-
-                    objectStore.seek(offset);
-                    Kryo kryo = NecromancerKryo.getInstance();
-
-                    Input input = new Input(Channels.newInputStream(objectStore.getChannel()));
-
-                    Object o = kryo.readClassAndObject(input);
-                    return o;
+    private LoadingCache<ObjectId, Object> objectCache = CacheBuilder.newBuilder().maximumSize(100000)
+        .build(new CacheLoader<ObjectId, Object>() {
+            @Override
+            public synchronized Object load(ObjectId k) throws Exception {
+                if (k == null || k.getObjectId() == 0) {
+                    return NULL;
                 }
-            });
+
+                String offsetHex = asString(oindex.get(bytes(Long.toHexString(k.getObjectId()))));
+                if (offsetHex == null) {
+                    throw new IllegalStateException(k.getObjectId() + " has no offset.");
+                }
+
+                long offset = Long.parseLong(offsetHex, 16);
+
+                objectStore.seek(offset);
+                Kryo kryo = NecromancerKryo.getInstance();
+
+                Input input = new Input(Channels.newInputStream(objectStore.getChannel()));
+
+                Object o = kryo.readClassAndObject(input);
+                return o;
+            }
+        });
 
     private final RandomAccessFile objectStore;
 
@@ -112,12 +108,17 @@ public class KryoReadonlyShadowFactory implements ShadowFactorySPI {
 
         bref = new File(dbdir, "bref.db");
         cgroup = new File(dbdir, "cgroup.db");
-        
+
         Options options = new Options();
         options.createIfMissing(true);
         oindex = factory.open(new File(dbdir, "oindex.db"), options);
-        
-        snapshotTime = new Date(Long.parseLong(asString(oindex.get(bytes("now"))), 16));
+
+        String now = asString(oindex.get(bytes("now")));
+        if (now != null) {
+            snapshotTime = new Date(Long.parseLong(now, 16));
+        } else {
+            snapshotTime = new Date();
+        }
     }
 
     @Override
@@ -134,8 +135,6 @@ public class KryoReadonlyShadowFactory implements ShadowFactorySPI {
         return snapshotTime;
     }
 
-    
-    
     public ShadowClass getClass(ClassId type) {
         ShadowClass s = loadedClasses.get(type);
         if (s == null) {
@@ -196,9 +195,8 @@ public class KryoReadonlyShadowFactory implements ShadowFactorySPI {
 
     @Override
     public Collection<String> grepClassName(String name) {
-        return types.keySet().stream().
-                filter(s -> s.toLowerCase().contains(name.toLowerCase())).
-                collect(Collectors.toCollection(TreeSet::new));
+        return types.keySet().stream().filter(s -> s.toLowerCase().contains(name.toLowerCase()))
+            .collect(Collectors.toCollection(TreeSet::new));
     }
 
     @Override
@@ -207,7 +205,7 @@ public class KryoReadonlyShadowFactory implements ShadowFactorySPI {
     }
 
     @Override
-    public void close() throws IOException{
+    public void close() throws IOException {
         oindex.close();
     }
 

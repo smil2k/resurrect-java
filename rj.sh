@@ -1,3 +1,3 @@
 #!/bin/sh
 
-java -jar target/*.jar $*
+java -jar runnable/target/*.jar $*

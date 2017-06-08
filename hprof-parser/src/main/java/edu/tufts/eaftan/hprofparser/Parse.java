@@ -79,7 +79,7 @@ public class Parse {
     HprofParser parser = new HprofParser(handler);
 
     try {
-      parser.parse(new File(argList.get(argList.size() - 1)));
+      parser.parse(new File(argList.get(argList.size() - 1)), false);
     } catch (IOException e) {
       System.err.println(e);
     } 

@@ -93,7 +93,7 @@ public class NonNullTest {
   public void argumentsMustBeNonNull() throws Exception {
     String testFilePath = getAbsolutePathForResource("java.hprof");
     HprofParser parser = new HprofParser(NULL_CHECKER_HANDLER);
-    parser.parse(new File(testFilePath));
+    parser.parse(new File(testFilePath), false);
   }
 
 }

@@ -5,13 +5,14 @@ package necromancer.data;
 
 import com.google.common.collect.Iterators;
 import edu.tufts.eaftan.hprofparser.parser.datastructures.Type;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
+
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 @AllArgsConstructor
 @EqualsAndHashCode
