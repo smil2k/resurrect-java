@@ -23,6 +23,7 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import java.io.*;
+import java.util.Arrays;
 
 /**
  *
@@ -31,7 +32,8 @@ import java.io.*;
 public class Main {
 
     /**
-     * @param args the command line arguments
+     * @param args
+     *            the command line arguments
      */
     public static void main(String[] args) throws Exception {
         try {
@@ -55,7 +57,7 @@ public class Main {
 
     private void prompt(ConsoleReader reader) throws IOException {
         reader.addCompleter(new StringsCompleter("load ", "eval ", "loadlibrary ", "grepobj ", "grepclass ", "source ",
-                "rebuildcache ", "reset", "exit"));
+            "rebuildcache ", "reset", "exit"));
 
         while (true) {
 
@@ -116,7 +118,7 @@ public class Main {
         } else {
             createCache(file);
         }
-       
+
         KryoReadonlyShadowFactory factory = new KryoReadonlyShadowFactory(dbdir);
         ShadowFactory.setInstance(factory);
         newEngine();
@@ -130,10 +132,10 @@ public class Main {
         File dbdir = new File(hprofFile + ".cache");
         FileUtils.deleteDirectory(dbdir);
 
-        DumpObjectDataHandler handler= new DumpObjectDataHandler(dbdir);
+        DumpObjectDataHandler handler = new DumpObjectDataHandler(dbdir);
         HprofParser parser = new HprofParser(handler);
         parser.parse(new File(hprofFile), hprofFile.endsWith(".gz"));
-        
+
         System.out.println();
         parser = null;
         System.gc();
@@ -151,7 +153,12 @@ public class Main {
 
     private void loadJsLibrary() throws IOException {
         PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
-        for (Resource r : resolver.getResources("classpath:/library/**/*.js")) {
+
+        Resource[] resourceList = resolver.getResources("classpath:/library/**/*.js");
+
+        Arrays.sort(resourceList, (o1, o2) -> o1.getFilename().compareToIgnoreCase(o2.getFilename()));
+
+        for (Resource r : resourceList) {
             Reader rd = new InputStreamReader(r.getInputStream(), "UTF-8");
             System.out.println("Loading lib " + r.getFilename());
             evalScript(rd);
@@ -184,8 +191,8 @@ public class Main {
             }
         } catch (ScriptException ex) {
             System.out.println("Parse error: " + ex.getMessage());
-            //} catch (InvocationTargetException ex) {
-            //     System.out.println("Error: " + ex.getMessage());
+            // } catch (InvocationTargetException ex) {
+            // System.out.println("Error: " + ex.getMessage());
         } catch (Exception ex) {
             System.out.println("RT error: ");
             ex.printStackTrace();
