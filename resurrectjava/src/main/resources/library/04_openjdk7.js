@@ -2,6 +2,10 @@ var HashMap = Java.type("java.util.HashMap");
 var Date = Java.type("java.util.Date");
 var Arrays = Java.type("java.util.Arrays");
 
+RegisterHandler("sun.security.x509.CertificateSubjectName", function (obj) {
+  return obj.dnName.rfc2253Dn;
+});
+
 RegisterHandler("java.util.concurrent.ConcurrentHashMap", function (obj) {
   var result = new HashMap();
 

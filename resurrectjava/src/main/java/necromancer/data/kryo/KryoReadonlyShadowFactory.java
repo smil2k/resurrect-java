@@ -8,34 +8,19 @@ import com.esotericsoftware.kryo.io.Input;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.channels.Channels;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.concurrent.ExecutionException;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import necromancer.data.ClassId;
-import necromancer.data.ObjectId;
-import necromancer.data.ShadowClass;
+import necromancer.data.*;
 import necromancer.data.ShadowFactory.ShadowFactorySPI;
-import necromancer.data.ShadowObjectArray;
 import org.iq80.leveldb.DB;
 import org.iq80.leveldb.Options;
 
-import static org.iq80.leveldb.impl.Iq80DBFactory.asString;
-import static org.iq80.leveldb.impl.Iq80DBFactory.bytes;
-import static org.iq80.leveldb.impl.Iq80DBFactory.factory;
+import java.io.*;
+import java.nio.channels.Channels;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static org.iq80.leveldb.impl.Iq80DBFactory.*;
 
 public class KryoReadonlyShadowFactory implements ShadowFactorySPI {
 
@@ -78,6 +63,7 @@ public class KryoReadonlyShadowFactory implements ShadowFactorySPI {
         .build(new CacheLoader<ObjectId, Object>() {
             @Override
             public synchronized Object load(ObjectId k) throws Exception {
+                // cache loader always need a result.
                 if (k == null || k.getObjectId() == 0) {
                     return NULL;
                 }
@@ -94,8 +80,27 @@ public class KryoReadonlyShadowFactory implements ShadowFactorySPI {
 
                 Input input = new Input(Channels.newInputStream(objectStore.getChannel()));
 
-                Object o = kryo.readClassAndObject(input);
-                return o;
+                return kryo.readClassAndObject(input);
+            }
+        });
+
+    private LoadingCache<ObjectId, Set<ObjectId>> backReferences = CacheBuilder.newBuilder().maximumSize(100000)
+        .build(new CacheLoader<ObjectId, Set<ObjectId>>() {
+            @Override
+            public synchronized Set<ObjectId> load(ObjectId k) throws Exception {
+                Set<ObjectId> result = new HashSet<>();
+
+                try (Input input = new Input(new FileInputStream(bref))) {
+                    Kryo kryo = NecromancerKryo.getInstance();
+                    while (input.eof() == false) {
+                        TwoLong s = kryo.readObject(input, TwoLong.class);
+                        if (s.getKey() == k.getObjectId()) {
+                            result.add(new ObjectId(s.getValue()));
+                        }
+                    }
+                }
+
+                return result;
             }
         });
 
@@ -157,6 +162,23 @@ public class KryoReadonlyShadowFactory implements ShadowFactorySPI {
         } catch (ExecutionException ex) {
             throw new IllegalStateException(ex);
         }
+    }
+
+    public Set<ObjectId> getBackReferenceIds(ObjectId obj) {
+        try {
+            return backReferences.get(obj);
+        } catch (ExecutionException ex) {
+            throw new IllegalStateException(ex);
+        }
+    }
+
+    public List<Object> getBackReferences(ObjectId obj) {
+        Set<ObjectId> bref = getBackReferenceIds(obj);
+        List<Object> result = new ArrayList<>(bref.size());
+
+        bref.forEach(item -> result.add(getObject(item)));
+
+        return result;
     }
 
     public Collection<Object> findAll(String name) {

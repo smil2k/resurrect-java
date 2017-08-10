@@ -10,9 +10,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 @AllArgsConstructor
 @EqualsAndHashCode
@@ -37,6 +35,14 @@ public class ShadowClass {
 
     // name -> type
     private Map<String, Type> fields = new HashMap<>();
+
+    public Collection<Object> getBackReferences() {
+        return ShadowFactory.getInstance().getBackReferences(new ObjectId(classId.getClassId()));
+    }
+
+    public Set<ObjectId> getBackReferenceIds() {
+        return ShadowFactory.getInstance().getBackReferenceIds(new ObjectId(classId.getClassId()));
+    }
 
     public ShadowClass getSuperType() {
         return ShadowFactory.getInstance().getClass(superClassId);

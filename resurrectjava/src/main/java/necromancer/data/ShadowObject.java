@@ -5,10 +5,11 @@ package necromancer.data;
 
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
+import lombok.Value;
+
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
-import lombok.Value;
 
 @Value
 @DefaultSerializer(FieldSerializer.class)
@@ -22,6 +23,14 @@ public class ShadowObject implements Map<String, Object> {
     public String toString() {
         return "object " + getType().getClassName() + "{" + objectId.getObjectId() + "}{" + fields.keySet() + "}";
 
+    }
+
+    public Collection<Object> getBackReferences() {
+        return ShadowFactory.getInstance().getBackReferences(objectId);
+    }
+
+    public Set<ObjectId> getBackReferenceIds() {
+        return ShadowFactory.getInstance().getBackReferenceIds(objectId);
     }
 
     public Set<String> getFieldNames() {

@@ -3,11 +3,13 @@
  */
 package necromancer.data;
 
+import lombok.Getter;
+
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Date;
+import java.util.Set;
 import java.util.function.Function;
-import lombok.Getter;
 
 public class ShadowFactory {
 
@@ -32,6 +34,10 @@ public class ShadowFactory {
         ShadowClass getClass(ClassId type);
 
         ShadowClass getClassByName(String type);
+
+        Set<ObjectId> getBackReferenceIds(ObjectId obj);
+
+        Collection<Object> getBackReferences(ObjectId obj);
 
         Object getObject(ObjectId id);
 

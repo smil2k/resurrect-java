@@ -7,12 +7,11 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoSerializable;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import java.io.Serializable;
-import java.util.AbstractList;
-import java.util.ArrayList;
-import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+
+import java.io.Serializable;
+import java.util.*;
 
 @AllArgsConstructor
 public class ShadowObjectArray extends AbstractList<Object> implements KryoSerializable, Serializable {
@@ -23,8 +22,17 @@ public class ShadowObjectArray extends AbstractList<Object> implements KryoSeria
 
     @Getter
     private ObjectId objectId;
+
     @Getter
     private List<ObjectId> objectIdArray;
+
+    public Collection<Object> getBackReferences() {
+        return ShadowFactory.getInstance().getBackReferences(objectId);
+    }
+
+    public Set<ObjectId> getBackReferenceIds() {
+        return ShadowFactory.getInstance().getBackReferenceIds(objectId);
+    }
 
     @Override
     public Object get(int index) {
