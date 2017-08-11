@@ -6,21 +6,22 @@ package necromancer.data.kryo;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Output;
 import edu.tufts.eaftan.hprofparser.parser.datastructures.Type;
-import java.io.Closeable;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
 import necromancer.data.ObjectId;
 import necromancer.data.ShadowClass;
 import necromancer.data.ShadowObject;
 import necromancer.data.ShadowObjectArray;
 import org.iq80.leveldb.DB;
 import org.iq80.leveldb.Options;
+import org.iq80.leveldb.impl.Iq80DBFactory;
 
-import static org.iq80.leveldb.impl.Iq80DBFactory.*;
-import static org.iq80.leveldb.impl.Iq80DBFactory.factory;
+import java.io.Closeable;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+
+import static org.iq80.leveldb.impl.Iq80DBFactory.bytes;
 
 public class KryoFileWriter implements Closeable {
 
@@ -43,36 +44,42 @@ public class KryoFileWriter implements Closeable {
 
         Options options = new Options();
         options.createIfMissing(true);
-                
-        oindex = factory.open(new File(file, "oindex.db"), options);
+
+        oindex = Iq80DBFactory.factory.open(new File(file, "oindex.db"), options);
 
         kryo = NecromancerKryo.getInstance();
     }
 
-    public void setTimestamp( long taken) {
+    public void setTimestamp(long taken) {
         oindex.put(bytes("now"), bytes(Long.toHexString(taken)));
     }
-    
+
     public void addObject(ShadowObject obj) {
         addKryoObject(obj.getObjectId(), obj);
 
         for (Object value : obj.getFields().values()) {
             if (value instanceof ObjectId) {
-                kryo.writeObject(bref,
-                        new TwoLong(((ObjectId) value).getObjectId(), obj.getObjectId().getObjectId()));
+                long target = ((ObjectId) value).getObjectId();
+                // Skip null values
+                if (target != 0) {
+                    kryo.writeObject(bref,
+                        new TwoLong(target, obj.getObjectId().getObjectId()));
+                }
             }
         }
 
         kryo.writeObject(cgroup,
-                new TwoLong(obj.getClassId().getClassId(), obj.getObjectId().getObjectId()));
+            new TwoLong(obj.getClassId().getClassId(), obj.getObjectId().getObjectId()));
     }
 
     public void addArray(ShadowObjectArray obj) {
         addKryoObject(obj.getObjectId(), obj);
 
         for (ObjectId object : obj.getObjectIdArray()) {
-            kryo.writeObject(bref,
-                    new TwoLong(object.getObjectId(), obj.getObjectId().getObjectId()));
+            if ( object.getObjectId() != 0 ) {
+                kryo.writeObject(bref,
+                                 new TwoLong(object.getObjectId(), obj.getObjectId().getObjectId()));
+            }
         }
     }
 

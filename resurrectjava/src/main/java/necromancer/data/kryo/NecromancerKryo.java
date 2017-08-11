@@ -6,15 +6,12 @@ package necromancer.data.kryo;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Kryo.DefaultInstantiatorStrategy;
 import edu.tufts.eaftan.hprofparser.parser.datastructures.Type;
+import necromancer.data.*;
+import org.objenesis.strategy.StdInstantiatorStrategy;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import necromancer.data.ClassId;
-import necromancer.data.ObjectId;
-import necromancer.data.ShadowClass;
-import necromancer.data.ShadowObject;
-import necromancer.data.ShadowObjectArray;
-import org.objenesis.strategy.StdInstantiatorStrategy;
 
 public class NecromancerKryo {
 
@@ -32,6 +29,7 @@ public class NecromancerKryo {
         instance.register(ArrayList.class, 18);
         instance.register(Type.class, 19);
         instance.register(TwoLong.class, 20);
+        instance.register(Long.class, 21);
 
         instance.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
 

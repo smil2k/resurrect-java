@@ -8,8 +8,11 @@ import com.esotericsoftware.kryo.io.Input;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import necromancer.data.*;
+import necromancer.data.ClassId;
+import necromancer.data.ObjectId;
+import necromancer.data.ShadowClass;
 import necromancer.data.ShadowFactory.ShadowFactorySPI;
+import necromancer.data.ShadowObjectArray;
 import org.iq80.leveldb.DB;
 import org.iq80.leveldb.Options;
 
@@ -33,6 +36,7 @@ public class KryoReadonlyShadowFactory implements ShadowFactorySPI {
     private File cgroup;
 
     private DB oindex;
+    private DB bindex;
 
     private Date snapshotTime;
 
@@ -88,6 +92,21 @@ public class KryoReadonlyShadowFactory implements ShadowFactorySPI {
         .build(new CacheLoader<ObjectId, Set<ObjectId>>() {
             @Override
             public synchronized Set<ObjectId> load(ObjectId k) throws Exception {
+                if (bindex != null) {
+                    byte[] b = bindex.get(bytes(Long.toHexString(k.getObjectId())));
+                    if (b == null) {
+                        System.out.println("Object has not back references! Bug? Calculating again.");
+                    } else {
+                        Input i = new Input(b);
+                        int size = i.readInt();
+                        Set<ObjectId> bt = new HashSet<>();
+                        for (int j = 0; j < size; j++) {
+                            bt.add(new ObjectId(i.readLong()));
+                        }
+                        return bt;
+                    }
+                }
+
                 Set<ObjectId> result = new HashSet<>();
 
                 try (Input input = new Input(new FileInputStream(bref))) {
@@ -117,6 +136,13 @@ public class KryoReadonlyShadowFactory implements ShadowFactorySPI {
         Options options = new Options();
         options.createIfMissing(true);
         oindex = factory.open(new File(dbdir, "oindex.db"), options);
+
+        File bindexFile = new File(dbdir, "bindex.db");
+        if (bindexFile.exists()) {
+            bindex = factory.open(bindexFile, options);
+        } else {
+            new BIndexBuilder(bref, bindexFile, indexdb -> bindex = indexdb).start();
+        }
 
         String now = asString(oindex.get(bytes("now")));
         if (now != null) {
