@@ -5,27 +5,15 @@ package necromancer.handler;
 
 import com.google.common.collect.Maps;
 import edu.tufts.eaftan.hprofparser.handler.NullRecordHandler;
-import edu.tufts.eaftan.hprofparser.parser.datastructures.ClassInfo;
-import edu.tufts.eaftan.hprofparser.parser.datastructures.Constant;
-import edu.tufts.eaftan.hprofparser.parser.datastructures.InstanceField;
-import edu.tufts.eaftan.hprofparser.parser.datastructures.Static;
-import edu.tufts.eaftan.hprofparser.parser.datastructures.Type;
-import edu.tufts.eaftan.hprofparser.parser.datastructures.Value;
+import edu.tufts.eaftan.hprofparser.parser.datastructures.*;
+import necromancer.data.*;
+import necromancer.data.kryo.KryoFileWriter;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
-import necromancer.data.ClassId;
-import necromancer.data.ObjectId;
-import necromancer.data.ShadowClass;
-import necromancer.data.ShadowObject;
-import necromancer.data.ShadowObjectArray;
-import necromancer.data.kryo.KryoFileWriter;
 
 public class DumpObjectDataHandler extends NullRecordHandler {
 
@@ -59,11 +47,19 @@ public class DumpObjectDataHandler extends NullRecordHandler {
                         i -> i.type + stringMap.get(i.fieldNameStringId),
                         i -> i.type));*/
 
+                    Map<String, Object> staticsMap = new HashMap<>();
+                    for (Static aStatic : value.statics) {
+                        Object obj = extractObjectFromValue(aStatic.value);
+                        staticsMap.put(stringMap.get(aStatic.staticFieldNameStringId), obj);
+                    }
+
+                    ShadowObject statics=new ShadowObject(new ClassId(value.classObjId), new ObjectId(value.classObjId), staticsMap);
+
                     ShadowClass cz = new ShadowClass(
                             new ClassId(value.classObjId), new ClassId(value.superClassObjId),
                             new ObjectId(value.classLoaderObjId),
                             classNameMap.get(value.classObjId).replace('/', '.'), value.instanceSize, value.instances,
-                            fieldmap);
+                            fieldmap, statics);
 
                     writer.addClass(cz);
                 }
@@ -115,12 +111,7 @@ public class DumpObjectDataHandler extends NullRecordHandler {
                 ClassInfo ci = classMap.get(nextClass);
                 nextClass = ci.superClassObjId;
                 for (InstanceField field : ci.instanceFields) {
-                    Value val = instanceFieldValues[i];
-                    Object obj = val.value;
-                    if (val.type == Type.OBJ) {
-                        obj = new ObjectId((Long) val.value);
-                    }
-
+                    Object obj = extractObjectFromValue(instanceFieldValues[i]);
                     fieldmap.put(stringMap.get(field.fieldNameStringId), obj);
                     i++;
                 }
@@ -137,6 +128,15 @@ public class DumpObjectDataHandler extends NullRecordHandler {
         tick(".", 50000);
     }
 
+    private Object extractObjectFromValue(Value<?> instanceFieldValue) {
+        Value val = instanceFieldValue;
+        Object obj = val.value;
+        if (val.type == Type.OBJ) {
+            obj = new ObjectId((Long) val.value);
+        }
+        return obj;
+    }
+
     @Override
     public void classDump(long classObjId, int stackTraceSerialNum, long superClassObjId, long classLoaderObjId,
                           long signersObjId, long protectionDomainObjId, long reserved1, long reserved2,
@@ -145,7 +145,7 @@ public class DumpObjectDataHandler extends NullRecordHandler {
         try {
             // store class info in a hashmap for later access
             classMap.put(classObjId, new OwnClassInfo(classLoaderObjId, classObjId, superClassObjId, instanceSize,
-                    instanceFields));
+                    instanceFields, statics));
 
             tick("C", 1000);
         } catch (Exception ex) {
@@ -171,12 +171,14 @@ public class DumpObjectDataHandler extends NullRecordHandler {
     public static class OwnClassInfo extends ClassInfo {
 
         public int instances;
-        public long classLoaderObjId;
+        public final long classLoaderObjId;
+        public final Static[] statics;
 
         public OwnClassInfo(long classLoaderObjId, long classObjId, long superClassObjId, int instanceSize,
-                            InstanceField[] instanceFields) {
+                            InstanceField[] instanceFields, Static[] statics) {
             super(classObjId, superClassObjId, instanceSize, instanceFields);
             this.classLoaderObjId = classLoaderObjId;
+            this.statics = statics;
         }
 
     }

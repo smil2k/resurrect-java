@@ -57,8 +57,15 @@ public class KryoFileWriter implements Closeable {
     public void addObject(ShadowObject obj) {
         addKryoObject(obj.getObjectId(), obj);
 
+        addObjectToBRef(obj);
+
+        kryo.writeObject(cgroup,
+            new TwoLong(obj.getClassId().getClassId(), obj.getObjectId().getObjectId()));
+    }
+
+    private void addObjectToBRef(ShadowObject obj) {
         for (Object value : obj.getFields().values()) {
-            if (value instanceof ObjectId) {
+            if (value instanceof ObjectId ) {
                 long target = ((ObjectId) value).getObjectId();
                 // Skip null values
                 if (target != 0) {
@@ -67,9 +74,6 @@ public class KryoFileWriter implements Closeable {
                 }
             }
         }
-
-        kryo.writeObject(cgroup,
-            new TwoLong(obj.getClassId().getClassId(), obj.getObjectId().getObjectId()));
     }
 
     public void addArray(ShadowObjectArray obj) {
@@ -103,6 +107,10 @@ public class KryoFileWriter implements Closeable {
     public void addClass(ShadowClass type) {
         addKryoObject(new ObjectId(type.getClassId().getClassId()), type);
         kryo.writeObject(cindex, type);
+
+        if ( type.getStatics() != null ) {
+            addObjectToBRef(type.getStatics());
+        }
     }
 
     @Override

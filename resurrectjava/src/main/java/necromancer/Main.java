@@ -23,7 +23,13 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import java.io.*;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.math.BigInteger;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  *
@@ -149,6 +155,7 @@ public class Main {
 
         engine.put("factory", ShadowFactory.getInstance());
         engine.put("engine", new EngineShadow());
+        engine.put("tools", new Tools());
     }
 
     private void loadJsLibrary() throws IOException {
@@ -224,6 +231,32 @@ public class Main {
             File script = new File(file.trim());
             System.out.println("Using script file : " + script.getAbsolutePath());
             evalScript(new FileReader(file));
+        }
+    }
+
+    public class Tools {
+        public BigInteger createBigInteger(int sig, List<Integer> magList)
+            throws IllegalAccessException, InvocationTargetException, InstantiationException {
+            int[] mag = new int[magList.size()];
+            int i = 0;
+            for (int b : magList) {
+                mag[i++] = b;
+            }
+
+            Constructor ctrs[] = BigInteger.class.getDeclaredConstructors();
+            Constructor ctr=null;
+            for (Constructor c : ctrs) {
+                if (c.getParameterCount() == 2 && c.getParameterTypes()[1] == int[].class) {
+                    ctr = c;
+                    AccessController.doPrivileged((PrivilegedAction<? extends Object>) () -> {
+                        c.setAccessible(true);
+                        return null;
+                    });
+                    break;
+                }
+            }
+
+            return (BigInteger)ctr.newInstance(sig, mag);
         }
     }
 }

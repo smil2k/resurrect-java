@@ -1,5 +1,25 @@
+var ArrayList = Java.type("java.util.ArrayList");
+var HashMap = Java.type("java.util.HashMap");
+var Date = Java.type("java.util.Date");
+var String = Java.type("java.lang.String");
+var SimpleDateFormat = Java.type("java.text.SimpleDateFormat");
+var Arrays = Java.type("java.util.Arrays");
+
+var ISOFormat=new SimpleDateFormat("MMMdd HH:mm:SS ");
+
 function formatTimeUnixMs(time) {
-  var sec = Math.floor((factory.snapshotTime.time - time) / 1000);
+  if ( typeof time === 'object' ) {
+    time = time.time;
+  }
+
+  var offset = factory.snapshotTime.time - time;
+  var sig = offset >= 0 ? '+' : '-';
+
+  if ( sig === '-') {
+    offset = -offset;
+  }
+
+  var sec = Math.floor(offset / 1000);
   var min = 0;
   var hrs = 0;
 
@@ -13,7 +33,9 @@ function formatTimeUnixMs(time) {
     min = min % 60;
   }
 
-  return new Date(time) + " (" + hrs + " hrs " + min + " mins " + sec + " sec)";
+
+
+  return ISOFormat.format(new Date(time)) + String.format("(%s%02.0f:%02.0f:%02.0f)", sig, hrs, min,sec);
 }
 
 /**

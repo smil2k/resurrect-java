@@ -36,6 +36,9 @@ public class ShadowClass {
     // name -> type
     private Map<String, Type> fields = new HashMap<>();
 
+    @Getter
+    private ShadowObject statics;
+
     public Collection<Object> getBackReferences() {
         return ShadowFactory.getInstance().getBackReferences(new ObjectId(classId.getClassId()));
     }

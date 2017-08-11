@@ -1,9 +1,17 @@
-var HashMap = Java.type("java.util.HashMap");
-var Date = Java.type("java.util.Date");
-var Arrays = Java.type("java.util.Arrays");
-
 RegisterHandler("sun.security.x509.CertificateSubjectName", function (obj) {
   return obj.dnName.rfc2253Dn;
+});
+
+RegisterHandler("sun.security.x509.CertificateSerialNumber", function (obj) {
+  return obj.serial.serialNum;
+});
+
+RegisterHandler("sun.security.x509.CertificateVersion", function (obj) {
+  return obj.version;
+});
+
+RegisterHandler("java.math.BigInteger", function (obj) {
+  return tools.createBigInteger(obj.signum, obj.mag);
 });
 
 RegisterHandler("java.util.concurrent.ConcurrentHashMap", function (obj) {

@@ -8,25 +8,17 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.google.common.collect.Lists;
 import edu.tufts.eaftan.hprofparser.parser.datastructures.Type;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import necromancer.data.ClassId;
-import necromancer.data.ObjectId;
-import necromancer.data.ShadowClass;
-import necromancer.data.ShadowFactory;
-import necromancer.data.ShadowObject;
-import necromancer.data.ShadowObjectArray;
+import necromancer.data.*;
 import org.apache.commons.io.FileUtils;
 import org.junit.Assert;
 import org.junit.Test;
+
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.util.*;
 
 public class FileOperationsTest {
 
@@ -35,7 +27,7 @@ public class FileOperationsTest {
         Map<String, Type> fields = new HashMap<>();
         fields.put("some", Type.BYTE);
 
-        runKryo(new ShadowClass(new ClassId(8), null, null, "clazz", 2, 12, fields));
+        runKryo(new ShadowClass(new ClassId(8), null, null, "clazz", 2, 12, fields, null));
 
         Map<String, Object> f = new HashMap<>();
         f.put("some", (byte) 1);
@@ -75,7 +67,7 @@ public class FileOperationsTest {
 
         Map<String, Type> fields = new HashMap<>();
         fields.put("some", Type.BYTE);
-        ShadowClass type = new ShadowClass(new ClassId(8), null, null, "clazz", 12, 24, fields);
+        ShadowClass type = new ShadowClass(new ClassId(8), null, null, "clazz", 12, 24, fields, null);
 
         Map<String, Object> f = new HashMap<>();
         f.put("some", (byte) 1);
@@ -109,7 +101,7 @@ public class FileOperationsTest {
     public void testJavascriptBindings() throws Exception {
         Map<String, Type> fields = new HashMap<>();
         fields.put("some", Type.BYTE);
-        ShadowClass type = new ShadowClass(new ClassId(8), null, null, "clazz", 12, 34, fields);
+        ShadowClass type = new ShadowClass(new ClassId(8), null, null, "clazz", 12, 34, fields, null);
 
         Map<String, Object> f = new HashMap<>();
         f.put("some", (byte) 1);
