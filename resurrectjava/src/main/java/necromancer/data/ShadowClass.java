@@ -39,11 +39,22 @@ public class ShadowClass {
     @Getter
     private ShadowObject statics;
 
-    public Collection<Object> getBackReferences() {
+    public String findReferenceHolder(ObjectId ref) {
+        String result = getStatics().findReferenceHolder( ref );
+
+        if ( result != null ) {
+            return "static " + result;
+        }
+
+        return null;
+    }
+
+
+    public List<Object> getBackReferences() {
         return ShadowFactory.getInstance().getBackReferences(new ObjectId(classId.getClassId()));
     }
 
-    public Set<ObjectId> getBackReferenceIds() {
+    public List<ObjectId> getBackReferenceIds() {
         return ShadowFactory.getInstance().getBackReferenceIds(new ObjectId(classId.getClassId()));
     }
 

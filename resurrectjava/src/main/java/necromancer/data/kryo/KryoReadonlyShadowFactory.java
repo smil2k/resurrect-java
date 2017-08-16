@@ -39,6 +39,8 @@ public class KryoReadonlyShadowFactory implements ShadowFactorySPI {
     private DB bindex;
 
     private Date snapshotTime;
+    private int arrays;
+    private int objects;
 
     private LoadingCache<ClassId, Set<ObjectId>> objectsByClass = CacheBuilder.newBuilder().maximumSize(100000)
         .build(new CacheLoader<ClassId, Set<ObjectId>>() {
@@ -150,6 +152,15 @@ public class KryoReadonlyShadowFactory implements ShadowFactorySPI {
         } else {
             snapshotTime = new Date();
         }
+
+        String count = asString(oindex.get(bytes("objects")));
+        if (count != null) {
+            objects = Integer.parseInt(count);
+        }
+        count = asString(oindex.get(bytes("arrays")));
+        if (count != null) {
+            arrays = Integer.parseInt(count);
+        }
     }
 
     @Override
@@ -164,6 +175,16 @@ public class KryoReadonlyShadowFactory implements ShadowFactorySPI {
     @Override
     public Date getSnapshotTime() {
         return snapshotTime;
+    }
+
+    @Override
+    public int getObjectCount() {
+        return objects;
+    }
+
+    @Override
+    public int getArrayCount() {
+        return arrays;
     }
 
     public ShadowClass getClass(ClassId type) {
@@ -190,16 +211,28 @@ public class KryoReadonlyShadowFactory implements ShadowFactorySPI {
         }
     }
 
-    public Set<ObjectId> getBackReferenceIds(ObjectId obj) {
+    public Object getRawObject(ObjectId id) {
         try {
-            return backReferences.get(obj);
+            Object o = objectCache.get(id);
+            if (o == NULL) {
+                return null;
+            }
+            return o;
+        } catch (ExecutionException ex) {
+            throw new IllegalStateException(ex);
+        }
+    }
+
+    public List<ObjectId> getBackReferenceIds(ObjectId obj) {
+        try {
+            return new ArrayList<>(backReferences.get(obj));
         } catch (ExecutionException ex) {
             throw new IllegalStateException(ex);
         }
     }
 
     public List<Object> getBackReferences(ObjectId obj) {
-        Set<ObjectId> bref = getBackReferenceIds(obj);
+        List<ObjectId> bref = getBackReferenceIds(obj);
         List<Object> result = new ArrayList<>(bref.size());
 
         bref.forEach(item -> result.add(getObject(item)));

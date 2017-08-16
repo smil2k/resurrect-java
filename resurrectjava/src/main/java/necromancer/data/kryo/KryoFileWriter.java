@@ -35,6 +35,9 @@ public class KryoFileWriter implements Closeable {
 
     private Kryo kryo;
 
+    private int objects;
+    private int arrays;
+
     public KryoFileWriter(File file) throws IOException {
         file.mkdirs();
         cindex = new Output(new FileOutputStream(new File(file, "cindex.db")));
@@ -56,6 +59,8 @@ public class KryoFileWriter implements Closeable {
 
     public void addObject(ShadowObject obj) {
         addKryoObject(obj.getObjectId(), obj);
+
+        objects++;
 
         addObjectToBRef(obj);
 
@@ -79,6 +84,8 @@ public class KryoFileWriter implements Closeable {
     public void addArray(ShadowObjectArray obj) {
         addKryoObject(obj.getObjectId(), obj);
 
+        arrays++;
+
         for (ObjectId object : obj.getObjectIdArray()) {
             if ( object.getObjectId() != 0 ) {
                 kryo.writeObject(bref,
@@ -88,6 +95,8 @@ public class KryoFileWriter implements Closeable {
     }
 
     public void addPrimitiveArray(ObjectId id, Type type, Collection<?> list) {
+         arrays++;
+
         if (type == Type.CHAR) {
             StringBuilder s = new StringBuilder(list.size());
             list.stream().forEach((chr) -> {
@@ -115,6 +124,9 @@ public class KryoFileWriter implements Closeable {
 
     @Override
     public void close() throws IOException {
+        oindex.put(bytes("objects"), bytes(Integer.toString(objects)));
+        oindex.put(bytes("arrays"), bytes(Integer.toString(arrays)));
+
         cindex.close();
         oindex.close();
         objectStore.close();

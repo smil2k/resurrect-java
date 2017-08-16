@@ -13,9 +13,9 @@ function formatTimeUnixMs(time) {
   }
 
   var offset = factory.snapshotTime.time - time;
-  var sig = offset >= 0 ? '+' : '-';
+  var sig = offset >= 0 ? '-' : '+';
 
-  if ( sig === '-') {
+  if ( sig === '+') {
     offset = -offset;
   }
 
@@ -32,8 +32,6 @@ function formatTimeUnixMs(time) {
     hrs = Math.floor(min / 60);
     min = min % 60;
   }
-
-
 
   return ISOFormat.format(new Date(time)) + String.format("(%s%02.0f:%02.0f:%02.0f)", sig, hrs, min,sec);
 }

@@ -11,11 +11,11 @@ function FindCertificatesByName(cn) {
 }
 
 function ListCertificates(list) {
-    logger.printf("%12s | %46s | %15s | %26s | %26s\n", "Object#", "Name", "Serial", "Valid from", "Valid Until");
+    logger.printf("%12s | %46s | %15s | %27s | %27s\n", "Object#", "Name", "Serial", "Valid from", "Valid Until");
     for (var i =0 ; i< list.length ; i++) {
         var itm=list[i];
         var info=itm.certificate.info;
-        logger.printf("%12d | %46s | %15s | %25s | %25s\n", itm.getObjectId().getObjectId(), info.subject, info.serialNum,
+        logger.printf("%12d | %46s | %15s | %-27s | %-27s\n", itm.getObjectId().getObjectId(), info.subject, info.serialNum,
         formatTimeUnixMs(info.interval.notBefore), formatTimeUnixMs(info.interval.notAfter) );
     }
 }

@@ -26,11 +26,17 @@ public class ShadowObjectArray extends AbstractList<Object> implements KryoSeria
     @Getter
     private List<ObjectId> objectIdArray;
 
-    public Collection<Object> getBackReferences() {
+    public String findReferenceHolder(ObjectId ref) {
+        int idx = objectIdArray.indexOf(ref);
+
+        return idx == -1 ? null : "[" + idx + "]";
+    }
+
+    public List<Object> getBackReferences() {
         return ShadowFactory.getInstance().getBackReferences(objectId);
     }
 
-    public Set<ObjectId> getBackReferenceIds() {
+    public List<ObjectId> getBackReferenceIds() {
         return ShadowFactory.getInstance().getBackReferenceIds(objectId);
     }
 

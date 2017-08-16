@@ -8,6 +8,7 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import lombok.Value;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -25,11 +26,11 @@ public class ShadowObject implements Map<String, Object> {
 
     }
 
-    public Collection<Object> getBackReferences() {
+    public List<Object> getBackReferences() {
         return ShadowFactory.getInstance().getBackReferences(objectId);
     }
 
-    public Set<ObjectId> getBackReferenceIds() {
+    public List<ObjectId> getBackReferenceIds() {
         return ShadowFactory.getInstance().getBackReferenceIds(objectId);
     }
 
@@ -52,6 +53,22 @@ public class ShadowObject implements Map<String, Object> {
     public void putAll(
             Map<? extends String, ? extends Object> toMerge) {
         throw new UnsupportedOperationException();
+    }
+
+    public String findReferenceHolder(ObjectId ref) {
+        for (Entry<String, Object> field : fields.entrySet()) {
+            if ( ref.equals(field.getValue()) ) {
+                return field.getKey();
+            }
+        }
+
+        String result = getType().findReferenceHolder( ref );
+
+        if ( result != null ) {
+            return "static " + result;
+        }
+
+        return null;
     }
 
     public boolean containsKey(Object key) {

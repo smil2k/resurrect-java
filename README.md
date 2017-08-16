@@ -20,6 +20,30 @@ Commands:
 
 Anything else is evaulated as javascipt. eg. function invocation must be ended with ().  The result of the functions will be printed.
 
+### Accessing static properties
+
+You can access statics using the class of the object.
+The attributes are stored under the "statics" attribute of the class.
+
+eg.
+```
+   logger.println(var.type.statics.variable);
+```
+
+Staitics behaves like an object:
+
+```
+   describeObject(var.type.statics.variable);
+```
+
+### Accessing the incoming references
+
+There are two methods to access the back-references:
+
+* obj.*getBackReferences()* : Returns all objects referencing the given object.
+* obj.*getBackReferenceIds()* : Returns all object *ID* to the given object. 
+* obj.*findReferenceHolder(ObjectId)* : Returns the name of the holder field  
+
 ## Library
 
 Default library contains some handy functions for interaction with the given dump:
@@ -29,6 +53,7 @@ Default library contains some handy functions for interaction with the given dum
 The factory reference represents the loaded dump. You can use the following methods:
 - *factory.getSnapshotTime() : Date*: Time when the dump was taken
 - *factory.getObject(long) : Object*: Returns an object reference by objectid
+- *factory.getRawObject(long) : Object*: Returns an object reference by objectid without post processing.
 - *factory.findAll(string) : List\<Object\>*: Finds all instances of a class
 
 ### RegisterHandler()
@@ -58,6 +83,10 @@ Prints all attributes of an object by object id.
 
 Prints all attributes of an object by object reference
 
+### ShowBackTrack( long or objectId)
 
+Shows a swing dialog with a tree the incoming references.
 
+### ShowRelation( holder:objectId, ref:objectId )
 
+Displays the relation between the holder and the referenced object.

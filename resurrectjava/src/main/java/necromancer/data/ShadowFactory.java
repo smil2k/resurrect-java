@@ -8,7 +8,7 @@ import lombok.Getter;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Date;
-import java.util.Set;
+import java.util.List;
 import java.util.function.Function;
 
 public class ShadowFactory {
@@ -30,16 +30,19 @@ public class ShadowFactory {
     public interface ShadowFactorySPI {
 
         Date getSnapshotTime();
-        
+        int getObjectCount();
+        int getArrayCount();
+
         ShadowClass getClass(ClassId type);
 
         ShadowClass getClassByName(String type);
 
-        Set<ObjectId> getBackReferenceIds(ObjectId obj);
+        List<ObjectId> getBackReferenceIds(ObjectId obj);
 
-        Collection<Object> getBackReferences(ObjectId obj);
+        List<Object> getBackReferences(ObjectId obj);
 
         Object getObject(ObjectId id);
+        Object getRawObject(ObjectId id);
 
         Collection<Object> findAll(String name);
 

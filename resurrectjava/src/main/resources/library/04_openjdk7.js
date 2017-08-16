@@ -52,14 +52,25 @@ RegisterHandler("java.util.HashMap", function (obj) {
 });
 
 RegisterHandler("java.util.LinkedList", function (obj) {
-  var res = new java.util.ArrayList();
-
-  var x = obj.header.next;
+  var res = obj;
   var s = obj.size;
-  while ( s != 0 ) {
-    res.add(x.element);
-    x = x.next;
-    s--;
+
+  if ( obj.last && obj.first ) {
+        res = new java.util.ArrayList();
+        var x = obj.first;
+        while ( s != 0 ) {
+            res.add(x.item);
+            x = x.next;
+            s--;
+        }
+  } else if ( obj.header.next ) {
+     res = new java.util.ArrayList();
+     var x = obj.header.next;
+     while ( s != 0 ) {
+        res.add(x.element);
+        x = x.next;
+        s--;
+     }
   }
 
   return res;
