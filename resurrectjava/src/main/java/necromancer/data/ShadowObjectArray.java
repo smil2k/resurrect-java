@@ -45,6 +45,10 @@ public class ShadowObjectArray extends AbstractList<Object> implements KryoSeria
         return ShadowFactory.getInstance().getObject(objectIdArray.get(index));
     }
 
+    public Object getRaw(int index) {
+        return ShadowFactory.getInstance().getRawObject(objectIdArray.get(index));
+    }
+
     @Override
     public int size() {
         return objectIdArray.size();

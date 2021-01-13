@@ -30,6 +30,28 @@ RegisterHandler("java.util.concurrent.ConcurrentHashMap", function (obj) {
       }
     }
   }
+
+  for (var key in obj.table) {
+    var node = obj.table[key];
+    while (node) {
+      // node might be a "forwarding node", which has no key property!
+      if (node.key) {
+        result.put(node.key, node.val);
+      }
+      node = node.next;
+    }
+  }
+
+  for (var key in obj.nextTable) {
+    var node = obj.nextTable[key];
+    while (node) {
+      if (node.key) {
+        result.put(node.key, node.val);
+      }
+      node = node.next;
+    }
+  }
+
   return result;
 });
 
@@ -55,22 +77,22 @@ RegisterHandler("java.util.LinkedList", function (obj) {
   var res = obj;
   var s = obj.size;
 
-  if ( obj.last && obj.first ) {
-        res = new java.util.ArrayList();
-        var x = obj.first;
-        while ( s != 0 ) {
-            res.add(x.item);
-            x = x.next;
-            s--;
-        }
-  } else if ( obj.header.next ) {
-     res = new java.util.ArrayList();
-     var x = obj.header.next;
-     while ( s != 0 ) {
-        res.add(x.element);
-        x = x.next;
-        s--;
-     }
+  if (obj.last && obj.first) {
+    res = new java.util.ArrayList();
+    var x = obj.first;
+    while (s != 0) {
+      res.add(x.item);
+      x = x.next;
+      s--;
+    }
+  } else if (obj.header.next) {
+    res = new java.util.ArrayList();
+    var x = obj.header.next;
+    while (s != 0) {
+      res.add(x.element);
+      x = x.next;
+      s--;
+    }
   }
 
   return res;
@@ -79,8 +101,8 @@ RegisterHandler("java.util.LinkedList", function (obj) {
 RegisterHandler("java.util.concurrent.ConcurrentLinkedQueue", function (obj) {
   var res = new java.util.ArrayList();
 
-  var x = obj.head;  
-  while ( x ) {
+  var x = obj.head;
+  while (x) {
     res.add(x.item);
     x = x.next;
   }

@@ -42,7 +42,7 @@ public class KryoReadonlyShadowFactory implements ShadowFactorySPI {
     private int arrays;
     private int objects;
 
-    private LoadingCache<ClassId, Set<ObjectId>> objectsByClass = CacheBuilder.newBuilder().maximumSize(100000)
+    private LoadingCache<ClassId, Set<ObjectId>> objectsByClass = CacheBuilder.newBuilder().maximumSize(100)
         .build(new CacheLoader<ClassId, Set<ObjectId>>() {
             @Override
             public synchronized Set<ObjectId> load(ClassId k) throws Exception {
@@ -57,7 +57,6 @@ public class KryoReadonlyShadowFactory implements ShadowFactorySPI {
                 }
 
                 cgInput.close();
-
                 return result;
             }
 
@@ -65,7 +64,7 @@ public class KryoReadonlyShadowFactory implements ShadowFactorySPI {
 
     private Function<Object, Object> resolver;
 
-    private LoadingCache<ObjectId, Object> objectCache = CacheBuilder.newBuilder().maximumSize(100000)
+    private LoadingCache<ObjectId, Object> objectCache = CacheBuilder.newBuilder().maximumSize(1000000)
         .build(new CacheLoader<ObjectId, Object>() {
             @Override
             public synchronized Object load(ObjectId k) throws Exception {
