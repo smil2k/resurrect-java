@@ -54,7 +54,7 @@ The factory reference represents the loaded dump. You can use the following meth
 - *factory.getSnapshotTime() : Date*: Time when the dump was taken
 - *factory.getObject(long) : Object*: Returns an object reference by objectid
 - *factory.getRawObject(long) : Object*: Returns an object reference by objectid without post processing.
-- *factory.findAll(string) : List\<Object\>*: Finds all instances of a class
+- *factory.findAll(string) : List\<Object\>*: Finds all instances of a class. List supports getRaw() to get the unprocessed variant.
 
 ### RegisterHandler()
 
@@ -90,3 +90,10 @@ Shows a swing dialog with a tree the incoming references.
 ### ShowRelation( holder:objectId, ref:objectId )
 
 Displays the relation between the holder and the referenced object.
+
+## Runtime
+
+When after loading the dump a cache will be created. 
+This might take up to 2x the hprof size. 
+The reason being is that all object fields are copied over to an own db. 
+Hprof file is not used anymore during operation.
