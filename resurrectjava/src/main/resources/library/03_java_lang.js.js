@@ -1,5 +1,9 @@
 RegisterHandler("java.lang.String", function (obj) {
-  return obj.value;
+  if (obj.value) {
+    return obj.value;
+  } else {
+    return obj;
+  }
 });
 
 RegisterHandler("java.lang.Integer", function (obj) {

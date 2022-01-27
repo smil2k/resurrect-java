@@ -24,12 +24,16 @@ public class ShadowObjectArray extends AbstractList<Object> implements KryoSeria
     private ObjectId objectId;
 
     @Getter
-    private List<ObjectId> objectIdArray;
+    private long[] objectIdArray;
 
     public String findReferenceHolder(ObjectId ref) {
-        int idx = objectIdArray.indexOf(ref);
-
-        return idx == -1 ? null : "[" + idx + "]";
+        for (int i = 0; i < objectIdArray.length; i++) {
+            long l = objectIdArray[i];
+            if (l == ref.getObjectId()) {
+                return "[" + i + "]";
+            }
+        }
+        return  null;
     }
 
     public List<Object> getBackReferences() {
@@ -42,25 +46,27 @@ public class ShadowObjectArray extends AbstractList<Object> implements KryoSeria
 
     @Override
     public Object get(int index) {
-        return ShadowFactory.getInstance().getObject(objectIdArray.get(index));
+        return ShadowFactory.getInstance().getObject(new ObjectId(objectIdArray[index]));
     }
 
     public Object getRaw(int index) {
-        return ShadowFactory.getInstance().getRawObject(objectIdArray.get(index));
+        return ShadowFactory.getInstance().getRawObject(new ObjectId(objectIdArray[index]));
     }
 
     @Override
     public int size() {
-        return objectIdArray.size();
+        return objectIdArray.length;
     }
 
     @Override
     public void write(Kryo kryo, Output output) {
+        kryo.writeObject(output, objectId);
         kryo.writeObject(output, objectIdArray);
     }
 
     @Override
     public void read(Kryo kryo, Input input) {
-        objectIdArray = kryo.readObject(input, ArrayList.class);
+        objectId = kryo.readObject(input, ObjectId.class);
+        objectIdArray = kryo.readObject(input, long[].class);
     }
 }

@@ -77,7 +77,7 @@ public class FileOperationsTest {
         kf.addClass(type);
         kf.addObject(so);
         kf.addPrimitiveArray(new ObjectId(2), Type.BYTE, Collections.singleton((byte) 1));
-        kf.addArray(new ShadowObjectArray(new ObjectId(3), Lists.newArrayList(new ObjectId(8), new ObjectId(2))));
+        kf.addArray(new ShadowObjectArray(new ObjectId(3), new long[] {8,2}));
 
         kf.close();
 

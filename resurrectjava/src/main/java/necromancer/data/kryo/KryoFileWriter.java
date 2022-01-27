@@ -86,10 +86,10 @@ public class KryoFileWriter implements Closeable {
 
         arrays++;
 
-        for (ObjectId object : obj.getObjectIdArray()) {
-            if ( object.getObjectId() != 0 ) {
+        for (long object : obj.getObjectIdArray()) {
+            if ( object != 0 ) {
                 kryo.writeObject(bref,
-                                 new TwoLong(object.getObjectId(), obj.getObjectId().getObjectId()));
+                                 new TwoLong(object, obj.getObjectId().getObjectId()));
             }
         }
     }

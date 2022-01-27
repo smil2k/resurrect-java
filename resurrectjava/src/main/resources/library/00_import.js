@@ -19,6 +19,13 @@ function getObject(name) {
 }
 
 /**
+ * Finds object directly by Id
+ */
+function getRawObject(name) {
+  return factory.getObject(new ObjectId(name));
+}
+
+/**
  * Imports more javascript files. Relative from the working dir.
  */
 function importFile(name) {

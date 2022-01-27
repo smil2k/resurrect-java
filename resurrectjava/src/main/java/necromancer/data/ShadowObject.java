@@ -46,6 +46,10 @@ public class ShadowObject implements Map<String, Object> {
         return getType().getClassName();
     }
 
+    public ObjectId getObjectId() {
+        return objectId;
+    }
+
     public Object put(String name, Object value) {
         throw new UnsupportedOperationException();
     }

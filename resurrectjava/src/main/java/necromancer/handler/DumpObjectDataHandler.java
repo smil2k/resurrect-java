@@ -23,6 +23,8 @@ public class DumpObjectDataHandler extends NullRecordHandler {
     private Map<Long, String> classNameMap = new HashMap<>();
     private Map<Long, OwnClassInfo> classMap = new HashMap<>();
 
+    private long stringClass;
+    
     private KryoFileWriter writer;
 
     public DumpObjectDataHandler(File dir) throws IOException {
@@ -90,11 +92,7 @@ public class DumpObjectDataHandler extends NullRecordHandler {
 
     @Override
     public void objArrayDump(long objId, int stackTraceSerialNum, long elemClassObjId, long[] elems) {
-        List<ObjectId> result = Arrays.stream(elems).
-                mapToObj(i -> new ObjectId(i)).
-                collect(Collectors.toCollection(ArrayList::new));
-
-        writer.addArray(new ShadowObjectArray(new ObjectId(objId), result));
+        writer.addArray(new ShadowObjectArray(new ObjectId(objId), elems));
         tick("A", 10000);
     }
 
@@ -102,17 +100,18 @@ public class DumpObjectDataHandler extends NullRecordHandler {
     public void instanceDump(long objId, int stackTraceSerialNum, long classObjId,
                              Value<?>[] instanceFieldValues) {
         Map<String, Object> fieldmap = Maps.newHashMap();
-
+        
         if (instanceFieldValues.length > 0) {
             // superclass of Object is 0
             int i = 0;
             long nextClass = classObjId;
             while (nextClass != 0) {
                 ClassInfo ci = classMap.get(nextClass);
-                nextClass = ci.superClassObjId;
+                nextClass = ci.superClassObjId;                
                 for (InstanceField field : ci.instanceFields) {
                     Object obj = extractObjectFromValue(instanceFieldValues[i]);
-                    fieldmap.put(stringMap.get(field.fieldNameStringId), obj);
+                    String fieldName = stringMap.get(field.fieldNameStringId);
+                    fieldmap.put(fieldName, obj);
                     i++;
                 }
             }
@@ -127,7 +126,7 @@ public class DumpObjectDataHandler extends NullRecordHandler {
 
         tick(".", 50000);
     }
-
+    
     private Object extractObjectFromValue(Value<?> instanceFieldValue) {
         Value val = instanceFieldValue;
         Object obj = val.value;
@@ -160,7 +159,9 @@ public class DumpObjectDataHandler extends NullRecordHandler {
 
     @Override
     public void loadClass(int classSerialNum, long classObjId, int stackTraceSerialNum, long classNameStringId) {
-        classNameMap.put(classObjId, stringMap.get(classNameStringId));
+        String className = stringMap.get(classNameStringId);
+        
+        classNameMap.put(classObjId, className);
     }
 
     @Override

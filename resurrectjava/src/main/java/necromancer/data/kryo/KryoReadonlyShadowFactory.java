@@ -22,6 +22,7 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import necromancer.data.ShadowObject;
 
 import static org.iq80.leveldb.impl.Iq80DBFactory.*;
 
@@ -201,15 +202,42 @@ public class KryoReadonlyShadowFactory implements ShadowFactorySPI {
             if (o == NULL) {
                 return null;
             }
+            
+            if (o instanceof ShadowObject) {
+                ShadowObject obj = (ShadowObject) o;
+                if ("java.lang.String".equals(obj.getClassName())) {
+                    o = getString(obj);
+                }
+            }
+            
             if (resolver != null) {
                 o = resolver.apply(o);
             }
             return o;
-        } catch (ExecutionException ex) {
+        } catch (Exception ex) {
             throw new IllegalStateException(ex);
         }
     }
 
+    /**
+     * String compaction turned the char array value to an array of bytes
+     */
+    private Object getString(ShadowObject obj) throws UnsupportedEncodingException {
+        if (obj.getFields().containsKey("coder")) {
+            byte c = (Byte)obj.get("coder");
+            List<Byte> v = (List<Byte>) obj.get("value");
+            
+            byte[] b = new byte[v.size()];
+            for (int i = 0; i < v.size(); i++) {
+                b[i] = v.get(i);                
+            }
+            
+            return new String(b, c == 0 ? "latin1" : "utf16");            
+        } else {
+            return obj;
+        }
+    }
+    
     public Object getRawObject(ObjectId id) {
         try {
             Object o = objectCache.get(id);
@@ -247,7 +275,8 @@ public class KryoReadonlyShadowFactory implements ShadowFactorySPI {
             }
 
             Set<ObjectId> list = (Set<ObjectId>) objectsByClass.get(type.getClassId());
-            return new ShadowObjectArray(null, new ArrayList(list));
+            
+            return new ShadowObjectArray(null, list.stream().mapToLong(ObjectId::getObjectId).toArray());
         } catch (ExecutionException ex) {
             throw new IllegalStateException(ex);
         }

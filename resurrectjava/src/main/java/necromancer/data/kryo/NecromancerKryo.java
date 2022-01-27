@@ -31,6 +31,8 @@ public class NecromancerKryo {
         instance.register(TwoLong.class, 20);
         instance.register(Long.class, 21);
 
+        instance.register(long[].class, 22);
+
         instance.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
 
         instance.setAutoReset(false);
